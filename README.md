@@ -1,17 +1,14 @@
 <img src="./logo.png" height=200px>
 
 <br>
-<br>
 
-> 
-> *"The hottest new programming language is English"* <br>
-> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;— **Andrej Karpathy**
-> 
-
+> *"The hottest new programming language is English"* &emsp;— **Andrej Karpathy**
 
 <br>
 
- :notes: Orchestra is a light-weight AI-assisted SOAR automation engine. You write security playbooks in plain English --- no cumbersome flowcharts. Orchestra converts them into executable Python scripts using modular re-usuable components, we then run them with our lightweight automation engine.
+:saxophone: Orchestra is a light-weight AI-assisted SOAR automation engine. You write security playbooks in plain English --- no cumbersome flowcharts. Orchestra converts them into executable Python scripts using modular re-usuable components, we then run them with our lightweight automation engine.
+
+<br>
 
 **Built by Engineer, for Engineers.**
 

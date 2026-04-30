@@ -1,0 +1,26 @@
+[
+    {
+        "module": "actions.virustotal",
+        "function": "lookup_ip",
+        "signature": "(ip: str) -> dict",
+        "description": "Look up an IP address on VirusTotal and return a structured report."
+    },
+    {
+        "module": "actions.webhook",
+        "function": "get_payload",
+        "signature": "() -> dict",
+        "description": "Read the webhook JSON payload from stdin."
+    },
+    {
+        "module": "actions.secrets_helper",
+        "function": "get_secret",
+        "signature": "(key: str) -> str",
+        "description": "Retrieve a secret value by key from the configured secrets backend."
+    },
+    {
+        "module": "actions.slack",
+        "function": "send_message",
+        "signature": "(text: str) -> dict",
+        "description": "Send a text message to the configured Slack channel via Incoming Webhook."
+    }
+]

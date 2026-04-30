@@ -1,0 +1,319 @@
+<img src="./logo.png" height=200px>
+
+<br>
+<br>
+
+> 
+> *"The hottest new programming language is English"* <br>
+> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;— **Andrej Karpathy**
+> 
+
+
+<br>
+
+ :notes: Orchestra is a light-weight AI-assisted SOAR automation engine. You write security playbooks in plain English --- no cumbersome flowcharts. Orchestra converts them into executable Python scripts using modular re-usuable components, we then run them with our lightweight automation engine.
+
+**Built by Engineer, for Engineers.**
+
+<br>
+
+## How It Works
+
+```
+You write a playbook          Orchestra composes it          Orchestra runs it
+     (.md)          ───▶          (.py script)        ───▶    (webhook / manual / cron)
+```
+
+1. **Write** a playbook in markdown describing your automation in plain English.
+2. **Compose** it with `orchestra compose playbook.md` — an LLM converts it to a Python script using the built-in action library.
+3. **Trigger** it via webhook, CLI, or cron schedule.
+
+<br>
+
+## Quick Start
+
+### Install
+
+```bash
+pip install orchestra
+```
+
+### Initialize a project
+
+```bash
+mkdir orchestra_workspace
+cd orchestra_workspace
+orchestra init
+```
+
+This scaffolds your automation project in the current directory:
+
+```
+orchestra_workspace/
+├── .env                              # Your secrets (generated from .env.example)
+├── .env.example                      # Required secrets template
+├── .local_config/
+│   └── orchestra.json                # Runtime configuration
+├── docker-compose.yml                # Docker deployment stack
+├── nginx.conf                        # TLS termination & proxy
+├── playbooks/
+│   ├── template.md                   # Playbook template
+│   └── ip_enrichment.md              # Example playbook
+└── musicsheets/
+    ├── ip_enrichment.py              # Example automation script
+    └── local_actions/
+    ├── __init__.py
+    └── action_index.json
+```
+
+### Set your LLM API key
+
+Add your API key to `.env` (copy from `.env.example`):
+
+```bash
+# OpenAI
+OPENAI_API_KEY=sk-...
+# Anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+# Gemini
+GEMINI_API_KEY=...
+```
+
+### Write your first playbook
+
+See [Writing a Playbook](#writing-a-playbook) below, or start with the included example:
+
+```bash
+orchestra compose playbooks/ip_enrichment.md
+```
+
+### Run it
+
+```bash
+# Manual run. (For testing, add the require API keys in .env file)
+orchestra playbook run ip_enrichment --payload '{"ip": "8.8.8.8"}'
+
+# Deploy the full automation engine.
+docker compose up -d
+```
+
+<br>
+
+## CLI Reference
+
+| Command | Description |
+|---|---|
+| `orchestra init` | Scaffold a new Orchestra automation project |
+| `orchestra compose <playbook>` | Convert a playbook markdown file into a Python script |
+| `orchestra playbook list` | List all playbooks in the project |
+| `orchestra playbook review <playbook>` | AI-powered review with structured feedback |
+| `orchestra playbook activate <event_type>` | Activate a playbook for webhook/scheduled triggers |
+| `orchestra playbook deactivate <event_type>` | Deactivate a playbook |
+| `orchestra playbook run <event_type> [--payload]` | Run a playbook manually from the CLI |
+| `orchestra actions` | List available action library functions |
+| `orchestra integrations` | List available integrations |
+| `orchestra schedule list` | View scheduled playbooks |
+| `orchestra schedule add <event_type> <cron>` | Schedule a playbook with a cron expression |
+| `orchestra schedule remove <event_type>` | Remove a schedule |
+| `orchestra server [--port]` | Start the webhook HTTP server |
+| `orchestra musician` | Start the Redis job worker. Musician run python scripts (musicsheets)|
+| `orchestra scheduler` | Start the cron-based scheduler |
+
+<br>
+
+## Writing a Playbook
+
+Playbooks are markdown files with a structured format. See `playbooks/template.md` for the canonical template.
+
+```markdown
+# Playbook: IP Enrichment with Slack Notification
+
+## Description
+Receives an IP via webhook, enriches it via VirusTotal, posts result to Slack.
+
+## Inputs
+- JSON payload: `{"event_type": "ip_enrichment", "ip": "1.1.1.1"}`
+
+## Invocation
+Triggered by a webhook POST to `/webhook`.
+
+## Steps
+1. Read the IP address from the webhook payload using `actions.webhook.get_payload`.
+2. Query VirusTotal using `actions.virustotal.lookup_ip`.
+3. Format the result into a human-readable message.
+4. Send the message to Slack using `actions.slack.send_message`.
+
+## Output
+- A Slack message with IP verdict, detection stats, country, and ISP.
+
+## Environment Variables
+- `VT_API_KEY`: VirusTotal API key
+- `SLACK_WEBHOOK_URL`: Slack incoming webhook URL
+```
+
+Then compose it:
+
+```bash
+orchestra compose playbooks/ip_enrichment.md
+```
+
+<br>
+
+## Built-in Actions
+
+The action library provides reusable functions that the Composer agent uses when generating scripts.
+
+### Custom Actions
+
+Add your own action functions in `musicsheets/local_actions/`, then rebuild the index:
+
+```bash
+orchestra actions
+```
+
+Your functions will be automatically discoverable by the Composer agent.
+
+<br>
+
+## Trigger Modes
+
+### Webhook (default)
+External services POST to `/webhook`. the payload is validated (HMAC-SHA256), enqueued into Redis, and picked up by the musician. The `event_type` field maps to `musicsheets/{event_type}.py`.
+
+### Manual
+Run any playbook directly from the CLI with optional JSON payload:
+
+```bash
+orchestra playbook run revoke_creds --payload '{"user": "alice"}'
+```
+
+### Scheduled
+Cron-based recurring execution:
+
+```bash
+orchestra schedule add daily_report "0 9 * * *"
+orchestra scheduler                    # Start the scheduler process
+```
+
+<br>
+
+## Configuration
+
+Runtime config lives at `.local_config/orchestra.json`:
+
+```json
+{
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6379,
+    "db": 0
+  },
+  "musician": {
+    "queue_key": "orchestra:jobs",
+    "dlq_key": "orchestra:dlq",
+    "timeout_seconds": 300,
+    "block_seconds": 5
+  },
+  "secrets": {
+    "backend": "env",
+    "backend_configs": {
+      "env": { "path": ".env" },
+      "docker_secrets": { "path": "/run/secrets" },
+      "aws_ssm": { "region": "ap-southeast-2", "prefix": "/orchestra/" }
+    }
+  },
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o"
+  }
+}
+```
+
+### Secrets Management Backends Options
+
+| Backend | Description |
+|---|---|
+| `env` (default) | Reads from environment variables (use Docker Compose `env_file` or shell exports to load `.env`) |
+| `docker_secrets` | Reads from Docker Swarm/Compose secret files |
+| `aws_ssm` | Reads from AWS Systems Manager Parameter Store (requires `pip install orchestra[aws]`) |
+
+### LLM Providers
+
+| Provider | Install | Config |
+|---|---|---|
+| OpenAI | Included by default | `OPENAI_API_KEY` |
+| Anthropic | `pip install orchestra[anthropic]` | `ANTHROPIC_API_KEY` |
+| Gemini | `pip install orchestra[gemini]` | `GEMINI_API_KEY` |
+| OpenAI-compatible (Ollama, Groq, Together, etc.) | Included by default | Set `base_url` in config |
+
+<br>
+
+## Docker Deployment
+
+The project includes a ready-to-run Docker Compose stack:
+
+```bash
+cp .env.example .env
+# Edit .env with your secrets
+docker compose up -d
+```
+
+| Service | Role |
+|---|---|
+| `redis` | Job queue (Redis 7 Alpine) |
+| `webhook` | FastAPI server receiving webhook POSTs |
+| `musician` | Job worker pulling from Redis and executing scripts |
+| `scheduler` | Cron-based trigger process |
+| `nginx` | Reverse proxy with TLS termination |
+
+The `musicsheets/` directory is mounted as a volume — add or update scripts without rebuilding images.
+
+<br>
+
+## Architecture
+
+```
+                         ┌─────────────────────────────────────────────┐
+                         │            Docker Compose Stack             │
+                         │                                             │
+  Webhook Source         │  ┌─────────┐      ┌────────────────────┐    │
+  ───────────────────────┼─▶│  Nginx  │─────▶│  Webhook Receiver  │    │
+  POST /webhook          │  │  :443   │      │  (FastAPI) :8000   │    │
+                         │  └─────────┘      └──────────┬─────────┘    │
+                         │                              │              │
+  ┌──────────────┐       │                          Enqueue            │
+  │  Manual CLI  │       │                              │              │
+  │ playbook run │───────┼─── Enqueue ───────▶┌─────────▼──────────┐   │
+  └──────────────┘       │                    │       Redis        │   │
+  ┌──────────────┐       │                    │      (Queue)       │   │
+  │  Scheduler   │───────┼─── Enqueue ───────▶└─────────┬──────────┘   │
+  │  (cron)      │       │                              │              │
+  └──────────────┘       │                              │              │
+                         │                    ┌─────────▼──────────┐   │
+                         │                    │      Musician      │   │
+                         │                    │   (Python loop)    │   │
+                         │                    └─────────┬──────────┘   │
+                         │                              │              │
+                         └──────────────────────────────┼──────────────┘
+                                                        │ subprocess
+                                           ┌────────────▼────────────┐
+                                           │ musicsheets/ (host vol.)│
+                                           │   ip_enrichment.py      │
+                                           └─────────────────────────┘
+```
+
+Each script runs as an isolated subprocess with stdin piping, subprocess timeout enforcement, and DLQ capture on non-zero exit codes.
+
+<br>
+
+## Requirements
+
+- Python >= 3.11
+- Redis (local or Docker)
+- An LLM API key (OpenAI, Anthropic, Gemini, or compatible)
+
+<br>
+
+## License
+
+MIT

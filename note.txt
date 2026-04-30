@@ -1,6 +1,0 @@
-routine repetitive boring high volume task (too costly for agent everytime)
-determinisitic 
-tight tool use
-No flow chart
-very lightweight
-modular

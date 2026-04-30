@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orchestra"
+version = "0.1.0"
+description = "AI-assisted automation engine for playbook-driven Python workflows."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi",
+  "redis",
+  "uvicorn",
+  "openai",
+]
+
+[project.optional-dependencies]
+aws = ["boto3"]
+anthropic = ["anthropic"]
+gemini = ["google-generativeai"]
+
+[project.scripts]
+orchestra = "orchestra:main"
+
+[tool.setuptools]
+py-modules = ["orchestra"]
+
+[tool.setuptools.packages.find]
+include = ["actions*", "composer_agent*", "conductor_agent*"]
+
+[tool.setuptools.package-data]
+actions = ["actions_index.json"]
+composer_agent = ["composer.md"]
+conductor_agent = [
+  "review_prompt.md",
+  "init_assets/.local_config/orchestra.json",
+  "init_assets/.env.example",
+  "init_assets/docker-compose.yml",
+  "init_assets/nginx.conf",
+  "init_assets/playbooks/*.md",
+  "init_assets/musicsheets/*.py",
+  "init_assets/musicsheets/local_actions/*",
+  "init_assets/musicsheets/local_actions/local_integrations/*",
+]

@@ -17,13 +17,51 @@ def _load_secrets_config() -> dict:
     return data.get("secrets", {"backend": "env", "backend_configs": {}})
 
 
+def _load_env_file(path: Path) -> dict:
+    env_vars = {}
+    if not path.exists():
+        return env_vars
+
+    with open(path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            value = value.strip().strip("'\"")
+            if key:
+                env_vars[key] = value
+
+    return env_vars
+
+
+_ENV_FILE_CACHE: dict | None = None
+
+
 def _get_secret_env(key: str) -> str:
     value = os.environ.get(key)
     if value is not None:
         return value
 
+    global _ENV_FILE_CACHE
+    if _ENV_FILE_CACHE is None:
+        config = _load_secrets_config()
+        env_config = config.get("backend_configs", {}).get("env", {})
+        dotenv_path = Path(env_config.get("path", ".env"))
+
+        if dotenv_path.is_absolute():
+            env_file = dotenv_path
+        else:
+            env_file = Path.cwd() / dotenv_path
+
+        _ENV_FILE_CACHE = _load_env_file(env_file)
+
+    if key in _ENV_FILE_CACHE:
+        return _ENV_FILE_CACHE[key]
+
     raise KeyError(
-        f"Secret '{key}' not found in environment. "
+        f"Secret '{key}' not found in environment or .env file. "
         f"Make sure it is set in your .env file or environment."
     )
 

@@ -13,13 +13,20 @@
   "secrets": {
     "backend": "env",
     "backend_configs": {
-      "env": { "path": ".env" },
-      "docker_secrets": { "path": "/run/secrets" },
-      "aws_ssm": { "region": "ap-southeast-2", "prefix": "/orchestra/" }
+      "env": {
+        "path": ".env"
+      },
+      "docker_secrets": {
+        "path": "/run/secrets"
+      },
+      "aws_ssm": {
+        "region": "ap-southeast-2",
+        "prefix": "/orchestra/"
+      }
     }
   },
   "llm": {
     "provider": "openai",
-    "model": "gpt-4o"
+    "model": "gpt-5.5"
   }
 }

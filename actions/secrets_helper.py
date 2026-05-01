@@ -1,4 +1,4 @@
-from conductor_agent.conductor_tasks.secrets import get_secret
+from conductor_agent.conductor_tasks.secrets import get_secret as _get_secret
 
 def get_secret(key: str) -> str:
     """
@@ -13,4 +13,4 @@ def get_secret(key: str) -> str:
     The active backend is configured in .local_config/orchestra.json under
     the "secrets" section. Supported backends: "env", "docker_secrets", "aws_ssm".
     """
-    return get_secret(key)
+    return _get_secret(key)

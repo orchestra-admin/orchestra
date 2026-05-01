@@ -8,7 +8,7 @@ services:
       - .env
     environment:
       ORCHESTRA_REDIS_HOST: redis
-    command: orchestra server --port 8000
+    command: server --port 8000
     depends_on:
       - redis
     working_dir: /workspace
@@ -21,7 +21,7 @@ services:
       - .env
     environment:
       ORCHESTRA_REDIS_HOST: redis
-    command: orchestra musician
+    command: musician
     depends_on:
       - redis
     working_dir: /workspace
@@ -34,7 +34,7 @@ services:
       - .env
     environment:
       ORCHESTRA_REDIS_HOST: redis
-    command: orchestra scheduler
+    command: scheduler
     depends_on:
       - redis
     working_dir: /workspace

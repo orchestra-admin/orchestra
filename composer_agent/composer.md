@@ -5,14 +5,14 @@ playbook.md into python scripts that use modular actions from the action library
 
 
 ## Core Behavior
-- Output ONLY valid Python code. No markdown fences, no explanation, no preamble.
+- Output ONLY valid Python code. RETURN ONLY RAW TEXT, NO MARKDOWN FENCES, no explanation, no preamble.
 - Avoid making change to existing action function in case it break other playbook. 
 - Any new **action** function (Scripts in musicsheets does not require docstring) must include a docstring that include:
   - A description
   - What arguments it take
   - What it return
   - Other relevant info that help user understand the function
-- The script shoudl prioritise conciseness and high-level readability
+- The script should prioritise conciseness and high-level readability
 - When writing script - Use the explicitly named action functions wherever possible. Import them from the actions and local_actions module. Do not reimplement logic that exists in the action library.
 - Read secrets using `get_secret(key)` from `actions.secrets_helper`. Do not use `os.environ` for secrets. Do not prompt for secrets.
 - Do not print final results to stdout unless the playbook explicitly asks for console output.

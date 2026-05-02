@@ -1,10 +1,26 @@
 import importlib
 import inspect
 import json
+import re
 import sys
 from pathlib import Path
 
 from conductor_agent.conductor_tasks.config import ACTIONS_DIR, get_project_root
+
+GET_SECRET_PATTERN = re.compile(r'get_secret\("([^"]+)"\)')
+
+
+def _extract_secret_keys(filepath: Path) -> list[str]:
+    keys = set()
+    try:
+        with open(filepath, "r") as f:
+            source = f.read()
+        for key in GET_SECRET_PATTERN.findall(source):
+            keys.add(key)
+    except Exception:
+        pass
+    return sorted(keys)
+
 
 def _build_index_for_directory(directory: Path, module_prefix: str, output_json_name: str) -> list:
     signatures = []
@@ -15,6 +31,8 @@ def _build_index_for_directory(directory: Path, module_prefix: str, output_json_
     for file in directory.glob("*.py"):
         if file.name.startswith("__"):
             continue
+
+        secret_keys = _extract_secret_keys(file)
             
         module_name = f"{module_prefix}.{file.stem}"
         try:
@@ -24,7 +42,7 @@ def _build_index_for_directory(directory: Path, module_prefix: str, output_json_
             continue
         
         for name, obj in inspect.getmembers(module, inspect.isfunction):
-            if not name.startswith("_"):
+            if not name.startswith("_") and getattr(obj, "__module__", "") == module.__name__:
                 sig = str(inspect.signature(obj))
                 doc = inspect.getdoc(obj)
                 
@@ -36,7 +54,8 @@ def _build_index_for_directory(directory: Path, module_prefix: str, output_json_
                     "module": module_name,
                     "function": name,
                     "signature": sig,
-                    "description": description
+                    "description": description,
+                    "secrets": secret_keys,
                 })
                 
     index_path = directory / output_json_name

@@ -67,10 +67,11 @@ def create_webhook_app():
     redis_client.ping()
 
     secret = get_webhook_secret()
+    Request = modules["Request"]
     app = FastAPI()
 
     @app.post("/webhook")
-    async def receive_webhook(request):
+    async def receive_webhook(request: Request):
         raw_body = await request.body()
         signature = get_signature_header(request.headers)
 

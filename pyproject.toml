@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "AI-assisted automation engine for playbook-driven Python workflows."
 requires-python = ">=3.11"
 dependencies = [
+  "boto3",
   "fastapi",
   "redis",
   "uvicorn",
@@ -15,7 +16,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-aws = ["boto3"]
 anthropic = ["anthropic"]
 gemini = ["google-generativeai"]
 

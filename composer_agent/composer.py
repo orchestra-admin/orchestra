@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 from conductor_agent.conductor_tasks.llm import llm_query
+from conductor_agent.conductor_tasks.config import get_project_root
 
 MAX_RETRIES = 3
 
@@ -30,7 +31,7 @@ def _validate_python(code: str) -> str | None:
 
 
 def compose_script(playbook_path, output_path=None):
-    project_root = Path.cwd()
+    project_root = get_project_root()
     playbook_path = Path(playbook_path)
     musicsheets_dir = project_root / "musicsheets"
 

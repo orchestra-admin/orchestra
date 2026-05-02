@@ -33,7 +33,12 @@ MUSICIAN_ENV_OVERRIDES = {
 INT_MUSICIAN_CONFIG_KEYS = {"port", "db", "timeout_seconds", "block_seconds"}
 
 def get_project_root() -> Path:
-    return Path.cwd()
+    marker = Path(".local_config") / "orchestra.json"
+    current = Path.cwd()
+    for parent in [current, *current.parents]:
+        if (parent / marker).exists():
+            return parent
+    return current
 
 def get_project_config_path(project_root: Path | None = None) -> Path:
     project_root = project_root or get_project_root()

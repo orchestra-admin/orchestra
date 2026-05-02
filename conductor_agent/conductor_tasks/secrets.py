@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 
-from conductor_agent.conductor_tasks.config import get_project_config_path
+from conductor_agent.conductor_tasks.config import get_project_config_path, get_project_root
 
 
 def _load_secrets_config() -> dict:
@@ -53,7 +53,7 @@ def _get_secret_env(key: str) -> str:
         if dotenv_path.is_absolute():
             env_file = dotenv_path
         else:
-            env_file = Path.cwd() / dotenv_path
+            env_file = get_project_root() / dotenv_path
 
         _ENV_FILE_CACHE = _load_env_file(env_file)
 

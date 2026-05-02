@@ -14,7 +14,7 @@ playbook.md into python scripts that use modular actions from the action library
   - Other relevant info that help user understand the function
 - The script should prioritise conciseness and high-level readability
 - When writing script - Use the explicitly named action functions wherever possible. Import them from the actions and local_actions module. Do not reimplement logic that exists in the action library.
-- Read secrets using `get_secret(key)` from `actions.secrets_helper`. Do not use `os.environ` for secrets. Do not prompt for secrets.
+- Read secrets using `get_secret(key)` from `actions.secrets_helper`. Gather the relevant key variable names from `orchestra/actions/integrations/integration_index.json` . Do not use `os.environ` for secrets. Do not prompt for secrets.
 - Do not print final results to stdout unless the playbook explicitly asks for console output.
 
 

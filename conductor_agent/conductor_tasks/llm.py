@@ -43,39 +43,47 @@ def _load_llm_config() -> dict:
     return merged
 
 
-def _openai_query(prompt: str, model: str, api_key: str, base_url: str | None) -> str:
+def _openai_query(system_prompt: str, user_prompt: str, model: str, api_key: str, base_url: str | None) -> str:
     import openai
 
     client = openai.OpenAI(api_key=api_key, base_url=base_url)
     response = client.chat.completions.create(
         model=model,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
     )
     return response.choices[0].message.content
 
 
-def _anthropic_query(prompt: str, model: str, api_key: str) -> str:
+def _anthropic_query(system_prompt: str, user_prompt: str, model: str, api_key: str) -> str:
     import anthropic
 
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
         model=model,
         max_tokens=4096,
-        messages=[{"role": "user", "content": prompt}],
+        system=system_prompt,
+        messages=[{"role": "user", "content": user_prompt}],
     )
     return response.content[0].text
 
 
-def _gemini_query(prompt: str, model: str, api_key: str) -> str:
+def _gemini_query(system_prompt: str, user_prompt: str, model: str, api_key: str) -> str:
     import google.generativeai as genai
 
     genai.configure(api_key=api_key)
-    model_obj = genai.GenerativeModel(model)
-    response = model_obj.generate_content(prompt)
+    try:
+        model_obj = genai.GenerativeModel(model, system_instruction=system_prompt)
+    except TypeError:
+        model_obj = genai.GenerativeModel(model)
+        user_prompt = system_prompt + "\n\n" + user_prompt
+    response = model_obj.generate_content(user_prompt)
     return response.text
 
 
-def llm_query(prompt: str) -> str:
+def llm_query(system_prompt: str, user_prompt: str) -> str:
     config = _load_llm_config()
     provider = config.get("provider", DEFAULT_LLM_CONFIG["provider"])
     model = config.get("model", DEFAULT_LLM_CONFIG["model"])
@@ -104,7 +112,7 @@ def llm_query(prompt: str) -> str:
 
     if provider == "openai":
         try:
-            return _openai_query(prompt, model, api_key, base_url)
+            return _openai_query(system_prompt, user_prompt, model, api_key, base_url)
         except ImportError:
             print(
                 f"Error: The 'openai' package is required for the OpenAI provider. "
@@ -115,7 +123,7 @@ def llm_query(prompt: str) -> str:
 
     if provider == "anthropic":
         try:
-            return _anthropic_query(prompt, model, api_key)
+            return _anthropic_query(system_prompt, user_prompt, model, api_key)
         except ImportError:
             print(
                 f"Error: The 'anthropic' package is required for the Anthropic provider. "
@@ -126,7 +134,7 @@ def llm_query(prompt: str) -> str:
 
     if provider == "gemini":
         try:
-            return _gemini_query(prompt, model, api_key)
+            return _gemini_query(system_prompt, user_prompt, model, api_key)
         except ImportError:
             print(
                 f"Error: The 'google-generativeai' package is required for the Gemini provider. "

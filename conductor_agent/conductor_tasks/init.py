@@ -1,8 +1,21 @@
 import secrets
 import shutil
+import subprocess
 from pathlib import Path
 
 from conductor_agent.conductor_tasks.config import INIT_ASSETS_DIR, get_project_root
+
+
+def _is_docker_installed() -> bool:
+    try:
+        subprocess.run(
+            ["docker", "--version"],
+            capture_output=True,
+            timeout=5,
+        )
+        return True
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
 
 
 def init_project() -> None:
@@ -23,3 +36,10 @@ def init_project() -> None:
     print("  - Fill in .env with your real secrets.")
     print("  - Review .local_config/orchestra.json and adjust Redis settings if needed.")
     print("  - Run orchestra compose <playbook.md> from this directory.")
+
+    if not _is_docker_installed():
+        print("\n[!] Docker is not installed. Orchestra requires Docker to run the built-in Automation Engine.")
+        print("    Install Docker Desktop: https://docs.docker.com/get-started/")
+        print("    Then run: docker compose up -d")
+    else:
+        print("\n    Start your Orchestra stack: docker compose up -d")

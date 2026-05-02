@@ -127,9 +127,7 @@ def review_playbook(playbook_path: str) -> None:
         f"## Existing Playbooks\n\n{existing_playbooks_text}"
     )
 
-    prompt = system_prompt + "\n\n" + user_message
-
     print(f"[*] Reviewing playbook: {playbook_path}...")
-    result = llm_query(prompt)
+    result = llm_query(system_prompt, user_message)
 
     print(result)

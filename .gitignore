@@ -1,7 +1,10 @@
 .env
 .env.*
+!.env.example
 *.env
 __pycache__/
 *.pyc
 .local_dev_agents/
-.note.txtorchestra.egg-info/
+.note.txt
+orchestra.egg-info/
+build/

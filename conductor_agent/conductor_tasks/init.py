@@ -31,7 +31,18 @@ def init_project() -> None:
         content = content.replace("WEBHOOK_SECRET=\n", f"WEBHOOK_SECRET={secrets.token_hex(32)}\n", 1)
         env_file.write_text(content)
 
+    print()
+    print("  ▗▄▖ ▗▄▄▖  ▗▄▄▖▗▖ ▗▖▗▄▄▄▖ ▗▄▄▖▗▄▄▄▖▗▄▄▖  ▗▄▖ ")
+    print(" ▐▌ ▐▌▐▌ ▐▌▐▌   ▐▌ ▐▌▐▌   ▐▌     █  ▐▌ ▐▌▐▌ ▐▌")
+    print(" ▐▌ ▐▌▐▛▀▚▖▐▌   ▐▛▀▜▌▐▛▀▀▘ ▝▀▚▖  █  ▐▛▀▚▖▐▛▀▜▌")
+    print(" ▝▚▄▞▘▐▌ ▐▌▝▚▄▄▖▐▌ ▐▌▐▙▄▄▖▗▄▄▞▘  █  ▐▌ ▐▌▐▌ ▐▌")
+    print()
+    print()
+    print("  𝄞♫♪ Welcome to Orchestra! 𝄞♫♪")
+    print()
+
     print(f"[+] Initialized Orchestra project at {project_root}")
+
     print("[*] Next steps:")
     print("  - Fill in .env with your real secrets.")
     print("  - Review .local_config/orchestra.json and adjust Redis settings if needed.")

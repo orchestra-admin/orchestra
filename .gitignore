@@ -4,4 +4,4 @@
 __pycache__/
 *.pyc
 .local_dev_agents/
-.note.txt
+.note.txtorchestra.egg-info/

@@ -7,6 +7,7 @@ from conductor_agent.conductor import (
     print_playbooks, activate_playbook, deactivate_playbook, run_playbook,
     list_schedules, add_schedule, remove_schedule, run_scheduler,
     run_musician, start_server, review_playbook,
+    push_secrets, list_secrets,
 )
 
 def main():
@@ -51,6 +52,11 @@ def main():
     rm_parser.add_argument("event_type", help="Event type of the playbook")
 
     subparsers.add_parser("scheduler", help="Start the schedule-based trigger process")
+
+    secrets_parser = subparsers.add_parser("secrets", help="Manage secrets (push, list)")
+    secrets_sub = secrets_parser.add_subparsers(dest="secrets_action", required=True)
+    secrets_sub.add_parser("push", help="Push .env secrets to the configured backend")
+    secrets_sub.add_parser("list", help="List known secret keys and their status")
     
     args = parser.parse_args()
     
@@ -106,6 +112,11 @@ def main():
         except RuntimeError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
+    elif args.command == "secrets":
+        if args.secrets_action == "push":
+            push_secrets()
+        elif args.secrets_action == "list":
+            list_secrets()
 
 if __name__ == "__main__":
     main()

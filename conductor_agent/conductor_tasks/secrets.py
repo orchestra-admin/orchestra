@@ -118,6 +118,50 @@ _BACKENDS = {
 }
 
 
+def _set_secret_aws_ssm(key: str, value: str) -> None:
+    import boto3
+
+    config = _load_secrets_config()
+    ssm_config = config.get("backend_configs", {}).get("aws_ssm", {})
+    region = ssm_config.get("region", "ap-southeast-2")
+    prefix = ssm_config.get("prefix", "/orchestra/")
+
+    full_key = f"{prefix}{key}"
+    client = boto3.client("ssm", region_name=region)
+    client.put_parameter(Name=full_key, Value=value, Type="SecureString", Overwrite=True)
+
+
+def _set_secret_docker_secrets(key: str, value: str) -> None:
+    config = _load_secrets_config()
+    docker_config = config.get("backend_configs", {}).get("docker_secrets", {})
+    secrets_path = Path(docker_config.get("path", "/run/secrets"))
+    secrets_path.mkdir(parents=True, exist_ok=True)
+    (secrets_path / key).write_text(value)
+
+
+_SET_BACKENDS = {
+    "aws_ssm": _set_secret_aws_ssm,
+    "docker_secrets": _set_secret_docker_secrets,
+}
+
+
+def set_secret(key: str, value: str) -> None:
+    config = _load_secrets_config()
+    backend_name = config.get("backend", "aws_ssm")
+
+    if backend_name == "env":
+        return
+
+    write_fn = _SET_BACKENDS.get(backend_name)
+    if write_fn is None:
+        raise ValueError(
+            f"Push not supported for secrets backend '{backend_name}'. "
+            f"Supported backends: {', '.join(sorted(_SET_BACKENDS.keys()))}"
+        )
+
+    write_fn(key, value)
+
+
 def get_secret(key: str) -> str:
     config = _load_secrets_config()
     backend_name = config.get("backend", "env")

@@ -11,7 +11,7 @@
     "block_seconds": 5
   },
   "secrets": {
-    "backend": "env",
+    "backend": "aws_ssm",
     "backend_configs": {
       "env": {
         "path": ".env"

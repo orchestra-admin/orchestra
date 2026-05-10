@@ -126,6 +126,33 @@ def _print_index(title: str, items: list) -> None:
         print()
 
 
+def _sync_env_keys(project_root: Path, integrations_list: list) -> None:
+    all_secrets = set()
+    for entry in integrations_list:
+        for key in entry.get("secrets", []):
+            all_secrets.add(key)
+
+    if not all_secrets:
+        return
+
+    env_file = project_root / ".env"
+    existing_lines = env_file.read_text().splitlines() if env_file.exists() else []
+    existing_keys = set()
+    for line in existing_lines:
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            existing_keys.add(line.split("=", 1)[0].strip())
+
+    missing = sorted(all_secrets - existing_keys)
+    if missing:
+        with open(env_file, "a") as f:
+            if existing_lines and existing_lines[-1].strip() != "":
+                f.write("\n")
+            for key in missing:
+                f.write(f"{key}=\n")
+        print(f"[*] Added {len(missing)} new secret key label(s) to .env: {', '.join(missing)}")
+
+
 def print_actions():
     actions_list = build_action_index()
     project_root = get_project_root()
@@ -137,4 +164,5 @@ def print_integrations():
     integrations_list = build_integration_index()
     project_root = get_project_root()
     integrations_list.extend(build_local_integration_index(project_root))
+    _sync_env_keys(project_root, integrations_list)
     _print_index("Available Orchestra Integrations", integrations_list)

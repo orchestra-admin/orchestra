@@ -93,12 +93,15 @@ def _get_secret_aws_ssm(key: str) -> str:
 
     config = _load_secrets_config()
     ssm_config = config["backend_configs"].get("aws_ssm", {})
-    region = ssm_config.get("region", "ap-southeast-2")
+    region = ssm_config.get("region") or None
     prefix = ssm_config.get("prefix", "/orchestra/")
 
     full_key = f"{prefix}{key}"
 
-    client = boto3.client("ssm", region_name=region)
+    client_kwargs = {}
+    if region:
+        client_kwargs["region_name"] = region
+    client = boto3.client("ssm", **client_kwargs)
 
     try:
         response = client.get_parameter(Name=full_key, WithDecryption=True)
@@ -123,11 +126,14 @@ def _set_secret_aws_ssm(key: str, value: str) -> None:
 
     config = _load_secrets_config()
     ssm_config = config.get("backend_configs", {}).get("aws_ssm", {})
-    region = ssm_config.get("region", "ap-southeast-2")
+    region = ssm_config.get("region") or None
     prefix = ssm_config.get("prefix", "/orchestra/")
 
     full_key = f"{prefix}{key}"
-    client = boto3.client("ssm", region_name=region)
+    client_kwargs = {}
+    if region:
+        client_kwargs["region_name"] = region
+    client = boto3.client("ssm", **client_kwargs)
     client.put_parameter(Name=full_key, Value=value, Type="SecureString", Overwrite=True)
 
 

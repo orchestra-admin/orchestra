@@ -4,6 +4,12 @@ from pathlib import Path
 
 from conductor_agent.conductor_tasks.llm import llm_query
 from conductor_agent.conductor_tasks.config import get_project_root
+from conductor_agent.conductor_tasks.index import (
+    build_action_index,
+    build_integration_index,
+    build_local_action_index,
+    build_local_integration_index,
+)
 
 MAX_RETRIES = 3
 
@@ -90,3 +96,8 @@ def compose_script(playbook_path, output_path=None):
         f.write(code_output)
 
     print(f"[+] Output written to {output_path}")
+
+    build_action_index()
+    build_integration_index()
+    build_local_action_index(project_root)
+    build_local_integration_index(project_root)

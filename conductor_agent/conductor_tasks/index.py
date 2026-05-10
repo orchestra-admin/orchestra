@@ -85,22 +85,26 @@ def build_local_action_index(project_root: Path):
 
 
 def build_integration_index():
-    return _build_index_for_directory(
+    result = _build_index_for_directory(
         directory=ACTIONS_DIR / "integrations",
         module_prefix="actions.integrations",
         output_json_name="integration_index.json"
     )
+    sync_env_keys(result)
+    return result
 
 
 def build_local_integration_index(project_root: Path):
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
-        
-    return _build_index_for_directory(
+
+    result = _build_index_for_directory(
         directory=project_root / "musicsheets" / "local_actions" / "local_integrations",
         module_prefix="local_actions.local_integrations",
         output_json_name="integration_index.json"
     )
+    sync_env_keys(result)
+    return result
 
 
 def _print_index(title: str, items: list) -> None:
@@ -126,7 +130,7 @@ def _print_index(title: str, items: list) -> None:
         print()
 
 
-def _sync_env_keys(project_root: Path, integrations_list: list) -> None:
+def sync_env_keys(integrations_list: list) -> None:
     all_secrets = set()
     for entry in integrations_list:
         for key in entry.get("secrets", []):
@@ -135,6 +139,7 @@ def _sync_env_keys(project_root: Path, integrations_list: list) -> None:
     if not all_secrets:
         return
 
+    project_root = get_project_root()
     env_file = project_root / ".env"
     existing_lines = env_file.read_text().splitlines() if env_file.exists() else []
     existing_keys = set()
@@ -164,5 +169,4 @@ def print_integrations():
     integrations_list = build_integration_index()
     project_root = get_project_root()
     integrations_list.extend(build_local_integration_index(project_root))
-    _sync_env_keys(project_root, integrations_list)
     _print_index("Available Orchestra Integrations", integrations_list)

@@ -20,7 +20,7 @@ from conductor_agent.conductor_tasks.musician import (
     enqueue_job,
     run_musician,
 )
-from conductor_agent.conductor_tasks.action_index import print_actions, print_integrations
+from conductor_agent.conductor_tasks.index import print_actions, print_integrations
 from conductor_agent.conductor_tasks.playbook import print_playbooks, activate_playbook, deactivate_playbook, run_playbook
 from conductor_agent.conductor_tasks.schedule_cli import list_schedules, add_schedule, remove_schedule
 from conductor_agent.conductor_tasks.scheduler import run_scheduler

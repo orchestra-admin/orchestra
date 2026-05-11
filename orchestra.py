@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import sys
-from composer_agent.composer import compose_script
+from composer_agent.composer import compose_script as compose_playbook, compose_action, compose_integration
 from conductor_agent.conductor import (
     init_project, print_actions, print_integrations,
     print_playbooks, activate_playbook, deactivate_playbook, run_playbook,
@@ -14,8 +14,19 @@ def main():
     parser = argparse.ArgumentParser(description="Orchestra SOAR CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
     
-    gen_parser = subparsers.add_parser("compose", help="Compose a Python script from a playbook")
-    gen_parser.add_argument("playbook", help="Path to the playbook markdown file")
+    gen_parser = subparsers.add_parser("compose", help="Generate code from descriptions")
+    compose_sub = gen_parser.add_subparsers(dest="compose_action", required=True)
+
+    playbook_parser = compose_sub.add_parser("playbook", help="Compose a Python script from a playbook")
+    playbook_parser.add_argument("playbook", help="Path to the playbook markdown file")
+
+    action_parser = compose_sub.add_parser("action", help="Generate a reusable action function")
+    action_parser.add_argument("description", help="Description of the action to generate")
+    action_parser.add_argument("--name", default=None, help="File stem for the action (e.g. 'jira' → jira.py)")
+
+    integration_parser = compose_sub.add_parser("integration", help="Generate an integration module")
+    integration_parser.add_argument("description", help="Description of the integration to generate")
+    integration_parser.add_argument("--name", default=None, help="File stem for the integration (e.g. 'slack' → slack.py)")
 
     subparsers.add_parser("init", help="Initialize an Orchestra automation project")
     
@@ -61,7 +72,12 @@ def main():
     args = parser.parse_args()
     
     if args.command == "compose":
-        compose_script(args.playbook)
+        if args.compose_action == "playbook":
+            compose_playbook(args.playbook)
+        elif args.compose_action == "action":
+            compose_action(args.description, args.name)
+        elif args.compose_action == "integration":
+            compose_integration(args.description, args.name)
     elif args.command == "init":
         init_project()
     elif args.command == "actions":

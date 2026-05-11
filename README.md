@@ -22,7 +22,7 @@ You write a playbook          Orchestra composes it          Orchestra runs it
 ```
 
 1. **Write** a playbook in markdown describing your automation in plain English.
-2. **Compose** it with `orchestra compose playbook.md` — an LLM converts it to a Python script using the built-in action library.
+2. **Compose** it with `orchestra compose playbook <playbook.md>` — an LLM converts it to a Python script using the built-in action library.
 3. **Trigger** it via webhook, CLI, or cron schedule.
 
 <br>
@@ -81,7 +81,7 @@ GEMINI_API_KEY=...
 See [Writing a Playbook](#writing-a-playbook) below, or start with the included example:
 
 ```bash
-orchestra compose playbooks/ip_enrichment.md
+orchestra compose playbook playbooks/ip_enrichment.md
 ```
 
 ### Run it
@@ -101,7 +101,9 @@ docker compose up -d
 | Command | Description |
 |---|---|
 | `orchestra init` | Scaffold a new Orchestra automation project |
-| `orchestra compose <playbook>` | Convert a playbook markdown file into a Python script |
+| `orchestra compose playbook <playbook>` | Convert a playbook markdown file into a Python script |
+| `orchestra compose action <description> [--name]` | Generate a reusable action function |
+| `orchestra compose integration <description> [--name]` | Generate an integration module |
 | `orchestra playbook list` | List all playbooks in the project |
 | `orchestra playbook review <playbook>` | AI-powered review with structured feedback |
 | `orchestra playbook activate <event_type>` | Activate a playbook for webhook/scheduled triggers |
@@ -151,7 +153,7 @@ Triggered by a webhook POST to `/webhook`.
 Then compose it:
 
 ```bash
-orchestra compose playbooks/ip_enrichment.md
+orchestra compose playbook playbooks/ip_enrichment.md
 ```
 
 <br>

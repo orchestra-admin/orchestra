@@ -50,7 +50,8 @@ def init_project() -> None:
 
     if not _is_docker_installed():
         print("\n[!] Docker is not installed. Orchestra requires Docker to run the built-in Automation Engine.")
-        print("    Install Docker Desktop: https://docs.docker.com/get-started/")
+        print("    macOS: Install Docker Desktop")
+        print("    Linux: Install Docker Engine")
         print("    Then run: docker compose up -d")
     else:
         print("\n    Start your Orchestra stack: docker compose up -d")

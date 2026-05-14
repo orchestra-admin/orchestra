@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import sys
-from composer_agent.composer import compose_script as compose_playbook, compose_action, compose_integration
+from composer_agent.composer import compose
 from conductor_agent.conductor import (
     init_project, print_actions, print_integrations,
     print_playbooks, activate_playbook, deactivate_playbook, run_playbook,
@@ -22,11 +22,11 @@ def main():
 
     action_parser = compose_sub.add_parser("action", help="Generate a reusable action function")
     action_parser.add_argument("description", help="Description of the action to generate")
-    action_parser.add_argument("--name", default=None, help="File stem for the action (e.g. 'jira' → jira.py)")
+    action_parser.add_argument("--name", default=None, help="Filename for the action (e.g. 'vt_lookup.py')")
 
     integration_parser = compose_sub.add_parser("integration", help="Generate an integration module")
     integration_parser.add_argument("description", help="Description of the integration to generate")
-    integration_parser.add_argument("--name", default=None, help="File stem for the integration (e.g. 'slack' → slack.py)")
+    integration_parser.add_argument("--name", default=None, help="Filename for the integration (e.g. 'jira_integration.py')")
 
     subparsers.add_parser("init", help="Initialize an Orchestra automation project")
     
@@ -73,11 +73,11 @@ def main():
     
     if args.command == "compose":
         if args.compose_action == "playbook":
-            compose_playbook(args.playbook)
+            compose("playbook", playbook=args.playbook)
         elif args.compose_action == "action":
-            compose_action(args.description, args.name)
+            compose("action", description=args.description, name=args.name)
         elif args.compose_action == "integration":
-            compose_integration(args.description, args.name)
+            compose("integration", description=args.description, name=args.name)
     elif args.command == "init":
         init_project()
     elif args.command == "actions":

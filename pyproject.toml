@@ -30,7 +30,7 @@ include = ["actions*", "composer_agent*", "conductor_agent*"]
 
 [tool.setuptools.package-data]
 actions = ["actions_index.json"]
-composer_agent = ["composer.md", "compose_action.md", "compose_integration.md"]
+composer_agent = ["composer.md", "composer_tasks/compose_action.md", "composer_tasks/compose_integration.md"]
 conductor_agent = [
   "review_prompt.md",
   "init_assets/.local_config/orchestra.json",

@@ -6,7 +6,7 @@ playbook.md into python scripts that use modular actions from the action library
 
 ## Core Behavior
 - Output valid Python within the specified markers only. NO MARKDOWN FENCES, no explanation, no preamble.
-- Avoid making change to existing action function in case it break other playbook. 
+- If you implement helper functions that might be useful for future playbook, ALWAYS write it as an action function with proper docstring and list it in the `###ACTIONS <name>.py###` section as shown below. Name the file <tool_name>.py or something sensible.
 - Any new **action** function (Scripts in musicsheets does not require docstring) must include a docstring that include:
   - A description
   - What arguments it take
@@ -15,20 +15,21 @@ playbook.md into python scripts that use modular actions from the action library
 - The script should prioritise conciseness and high-level readability
 - When writing script - Use the explicitly named action functions wherever possible. Import them from the actions and local_actions module. Do not reimplement logic that exists in the action library.
 - Read secrets using `get_secret(key)` from `actions.secrets_helper`. Use only the exact secret key names listed in the prompt. Do not use `os.environ` for secrets. Do not prompt for secrets. Do not invent or guess secret key names.
-- Do not print final results to stdout unless the playbook explicitly asks for console output.
 
 
 ## Output Format
 
 If you create reusable functions, wrap them using these markers. Group related functions by filename. Add to existing local action files when possible — do not duplicate existing functions. If no reusable functions are needed, output only the script.
 
+Naming: if the action is for a specific tool or service (e.g. Jira, Slack, VirusTotal), use `<tool>.py` (e.g. `###ACTIONS jira.py###`). For actions not tied to a specific tool, use a concise descriptive name (e.g. `###ACTIONS enrich_ip.py###`).
+
 ```
-###ACTIONS helper.py###
-<Python code — appended to local_actions/helper.py>
+###ACTIONS <name>.py###
+<Python code — appended to local_actions/<name>.py>
 ###END ACTIONS###
 
-###ACTIONS integrations/my_integration.py###
-<Python code — appended to local_actions/local_integrations/my_integration.py>
+###ACTIONS integrations/<name>_integration.py###
+<Python code — appended to local_actions/local_integrations/<name>_integration.py>
 ###END ACTIONS###
 
 ###SCRIPT###

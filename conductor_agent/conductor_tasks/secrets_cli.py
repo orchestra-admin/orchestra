@@ -6,11 +6,14 @@ from conductor_agent.conductor_tasks.config import ACTIONS_DIR, get_project_root
 from conductor_agent.conductor_tasks.secrets import get_secret, set_secret
 
 
-def _read_index_silent(path: Path) -> list:
+def _read_index_silent(path: Path) -> list | dict:
     if not path.exists():
         return []
     with open(path, "r") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return []
 
 
 def push_secrets() -> None:
@@ -89,9 +92,15 @@ def list_secrets() -> None:
 
     all_secrets = set()
     for idx_path in index_paths:
-        for entry in _read_index_silent(idx_path):
-            for key in entry.get("secrets", []):
-                all_secrets.add(key)
+        data = _read_index_silent(idx_path)
+        if isinstance(data, dict):
+            for info in data.values():
+                for key in info.get("secrets", []):
+                    all_secrets.add(key)
+        else:
+            for entry in data:
+                for key in entry.get("secrets", []):
+                    all_secrets.add(key)
 
     if not all_secrets:
         print("(No integrations found)")

@@ -74,8 +74,9 @@ def build_action_index():
 
 
 def build_local_action_index(project_root: Path):
-    if str(project_root) not in sys.path:
-        sys.path.insert(0, str(project_root))
+    musicsheets_path = str(project_root / "musicsheets")
+    if musicsheets_path not in sys.path:
+        sys.path.insert(0, musicsheets_path)
         
     return _build_index_for_directory(
         directory=project_root / "musicsheets" / "local_actions",
@@ -84,8 +85,26 @@ def build_local_action_index(project_root: Path):
     )
 
 
+def _build_integration_index_grouped(directory: Path, module_prefix: str, output_json_name: str) -> dict:
+    flat = _build_index_for_directory(directory, module_prefix, output_json_name)
+    grouped = {}
+    for entry in flat:
+        mod = entry["module"]
+        if mod not in grouped:
+            grouped[mod] = {"secrets": entry.get("secrets", []), "functions": []}
+        grouped[mod]["functions"].append({
+            "function": entry["function"],
+            "signature": entry.get("signature", ""),
+            "description": entry.get("description", ""),
+        })
+    index_path = directory / output_json_name
+    with open(index_path, "w") as f:
+        json.dump(grouped, f, indent=4)
+    return grouped
+
+
 def build_integration_index():
-    result = _build_index_for_directory(
+    result = _build_integration_index_grouped(
         directory=ACTIONS_DIR / "integrations",
         module_prefix="actions.integrations",
         output_json_name="integration_index.json"
@@ -95,10 +114,11 @@ def build_integration_index():
 
 
 def build_local_integration_index(project_root: Path):
-    if str(project_root) not in sys.path:
-        sys.path.insert(0, str(project_root))
+    musicsheets_path = str(project_root / "musicsheets")
+    if musicsheets_path not in sys.path:
+        sys.path.insert(0, musicsheets_path)
 
-    result = _build_index_for_directory(
+    result = _build_integration_index_grouped(
         directory=project_root / "musicsheets" / "local_actions" / "local_integrations",
         module_prefix="local_actions.local_integrations",
         output_json_name="integration_index.json"
@@ -107,18 +127,33 @@ def build_local_integration_index(project_root: Path):
     return result
 
 
-def _print_index(title: str, items: list) -> None:
+def _print_index(title: str, items: list | dict) -> None:
     print(f"\n--- {title} ---\n")
-    
+
+    if isinstance(items, dict):
+        if not items:
+            print("  (None found)")
+            return
+        for mod, info in items.items():
+            print(f"[{mod}]")
+            for func in info["functions"]:
+                desc = func.get("description", "")
+                if desc:
+                    print(f"  - {func['function']}(): {desc}")
+                else:
+                    print(f"  - {func['function']}()")
+            print()
+        return
+
     grouped = {}
     for item in items:
         mod = item["module"]
         grouped.setdefault(mod, []).append(item)
-        
+
     if not grouped:
         print("  (None found)")
         return
-        
+
     for mod, funcs in grouped.items():
         print(f"[{mod}]")
         for func in funcs:
@@ -130,10 +165,10 @@ def _print_index(title: str, items: list) -> None:
         print()
 
 
-def sync_env_keys(integrations_list: list) -> None:
+def sync_env_keys(integrations: dict) -> None:
     all_secrets = set()
-    for entry in integrations_list:
-        for key in entry.get("secrets", []):
+    for info in integrations.values():
+        for key in info.get("secrets", []):
             all_secrets.add(key)
 
     if not all_secrets:
@@ -166,7 +201,7 @@ def print_actions():
 
 
 def print_integrations():
-    integrations_list = build_integration_index()
+    integrations = build_integration_index()
     project_root = get_project_root()
-    integrations_list.extend(build_local_integration_index(project_root))
-    _print_index("Available Orchestra Integrations", integrations_list)
+    integrations.update(build_local_integration_index(project_root))
+    _print_index("Available Orchestra Integrations", integrations)

@@ -1,20 +1,26 @@
-[
-    {
-        "module": "actions.integrations.virustotal_integration",
-        "function": "get_api_key",
-        "signature": "() -> str",
-        "description": "",
+{
+    "actions.integrations.virustotal_integration": {
         "secrets": [
             "VT_API_KEY"
+        ],
+        "functions": [
+            {
+                "function": "get_api_key",
+                "signature": "() -> str",
+                "description": "Retrieve the VirusTotal API key."
+            }
         ]
     },
-    {
-        "module": "actions.integrations.slack_integration",
-        "function": "get_webhook_url",
-        "signature": "() -> str",
-        "description": "",
+    "actions.integrations.slack_integration": {
         "secrets": [
             "SLACK_WEBHOOK_URL"
+        ],
+        "functions": [
+            {
+                "function": "get_webhook_url",
+                "signature": "() -> str",
+                "description": "Retrieve the Slack incoming webhook URL."
+            }
         ]
     }
-]
+}

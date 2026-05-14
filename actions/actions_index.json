@@ -3,24 +3,28 @@
         "module": "actions.virustotal",
         "function": "lookup_ip",
         "signature": "(ip: str) -> dict",
-        "description": "Look up an IP address on VirusTotal and return a structured report."
+        "description": "Look up an IP address on VirusTotal and return a structured report.",
+        "secrets": []
     },
     {
         "module": "actions.webhook",
         "function": "get_payload",
         "signature": "() -> dict",
-        "description": "Read the webhook JSON payload from stdin."
+        "description": "Read the webhook JSON payload from stdin.",
+        "secrets": []
     },
     {
         "module": "actions.secrets_helper",
         "function": "get_secret",
         "signature": "(key: str) -> str",
-        "description": "Retrieve a secret value by key from the configured secrets backend."
+        "description": "Retrieve a secret value by key from the configured secrets backend.",
+        "secrets": []
     },
     {
         "module": "actions.slack",
         "function": "send_message",
         "signature": "(text: str) -> dict",
-        "description": "Send a text message to the configured Slack channel via Incoming Webhook."
+        "description": "Send a text message to the configured Slack channel via Incoming Webhook.",
+        "secrets": []
     }
 ]

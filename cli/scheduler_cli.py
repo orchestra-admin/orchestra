@@ -2,8 +2,8 @@ import sys
 
 
 def run_scheduler() -> None:
-    """CLI wrapper to run the Orchestra scheduler."""
-    from conductor_agent.conductor_tasks.scheduler import run_scheduler as _run
+    """CLI wrapper to run the Orchestra scheduler engine."""
+    from conductor.conductor_tasks.scheduler import run_scheduler as _run
 
     try:
         _run()

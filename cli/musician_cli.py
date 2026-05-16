@@ -3,7 +3,7 @@ import sys
 
 def run_musician() -> int:
     """CLI wrapper to run the Orchestra musician job processor."""
-    from conductor_agent.conductor_tasks.musician import run_musician as _run
+    from conductor.conductor_tasks.musician import run_musician as _run
 
     try:
         return _run()

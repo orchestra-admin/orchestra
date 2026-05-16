@@ -77,7 +77,7 @@ def print_playbooks():
 
 def run_playbook(event_type: str, payload: dict | None = None) -> None:
     """Manually execute a playbook by its event type with an optional payload."""
-    from conductor_agent.conductor_tasks.musician import build_queue_job, execute_job
+    from conductor.conductor_tasks.musician import build_queue_job, execute_job
 
     payload = payload or {}
     payload["event_type"] = event_type

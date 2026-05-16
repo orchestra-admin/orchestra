@@ -5,7 +5,7 @@ import json
 from orchestra_core.config import get_project_root, load_musician_config
 from orchestra_core.secrets import get_secret
 from orchestra_core.redis import get_redis_client
-from conductor_agent.conductor_tasks.musician import (
+from conductor.conductor_tasks.musician import (
     build_queue_job,
     enqueue_job,
 )

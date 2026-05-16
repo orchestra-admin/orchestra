@@ -11,7 +11,7 @@ from orchestra_core.config import (
     load_project_config,
 )
 from orchestra_core.redis import get_redis_client
-from conductor_agent.conductor_tasks.musician import (
+from conductor.conductor_tasks.musician import (
     build_queue_job,
     enqueue_job,
 )

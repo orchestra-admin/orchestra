@@ -8,4 +8,6 @@ __pycache__/
 .note.txt
 orchestra.egg-info/
 build/
+logs/
 AWS_DEPLOYMENT.md
+.tmp/

@@ -68,22 +68,42 @@ def _build_index_for_directory(directory: Path, module_prefix: str, output_json_
     return signatures
 
 
-def build_action_index():
+def _build_action_index_grouped(directory: Path, module_prefix: str, output_json_name: str) -> dict:
+    if not directory.exists():
+        return {}
+    flat = _build_index_for_directory(directory, module_prefix, output_json_name)
+    grouped: dict = {}
+    for entry in flat:
+        mod = entry["module"]
+        if mod not in grouped:
+            grouped[mod] = {"secrets": entry.get("secrets", []), "functions": []}
+        grouped[mod]["functions"].append({
+            "function": entry["function"],
+            "signature": entry.get("signature", ""),
+            "description": entry.get("description", ""),
+        })
+    index_path = directory / output_json_name
+    with open(index_path, "w") as f:
+        json.dump(grouped, f, indent=4)
+    return grouped
+
+
+def build_action_index() -> dict:
     """Build the built-in action index from actions/*.py, writing action_index.json."""
-    return _build_index_for_directory(
+    return _build_action_index_grouped(
         directory=ACTIONS_DIR,
         module_prefix="actions",
         output_json_name="action_index.json"
     )
 
 
-def build_local_action_index(project_root: Path):
+def build_local_action_index(project_root: Path) -> dict:
     """Build the local action index from musicsheets/local_actions/*.py."""
     musicsheets_path = str(project_root / "musicsheets")
     if musicsheets_path not in sys.path:
         sys.path.insert(0, musicsheets_path)
-        
-    return _build_index_for_directory(
+
+    return _build_action_index_grouped(
         directory=project_root / "musicsheets" / "local_actions",
         module_prefix="local_actions",
         output_json_name="action_index.json"
@@ -132,15 +152,18 @@ def build_local_integration_index(project_root: Path):
     )
 
 
-def sync_env_keys(integrations: dict) -> None:
-    """Append missing secret key labels from the integration index to .env."""
+def sync_env_keys(integrations: dict) -> list[str]:
+    """Append missing secret key labels from the integration index to .env.
+
+    Returns the list of keys that were newly added.
+    """
     all_secrets = set()
     for info in integrations.values():
         for key in info.get("secrets", []):
             all_secrets.add(key)
 
     if not all_secrets:
-        return
+        return []
 
     project_root = get_project_root()
     env_file = project_root / ".env"
@@ -160,11 +183,14 @@ def sync_env_keys(integrations: dict) -> None:
                 f.write(f"{key}=\n")
         logger.info("admin.env.synced", extra={"data": {"added": len(missing), "keys": sorted(missing)}})
 
+    return missing
 
-def get_actions_index():
-    actions_list = build_action_index()
+
+def get_actions_index() -> dict:
+    actions = build_action_index()
     project_root = get_project_root()
-    actions_list.extend(build_local_action_index(project_root))
+    actions.update(build_local_action_index(project_root))
+    return actions
     return actions_list
 
 

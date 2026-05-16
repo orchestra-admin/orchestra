@@ -34,7 +34,7 @@ def compose_action(description: str, name: str | None = None) -> tuple[bool, str
     local_actions_dir = project_root / "musicsheets" / "local_actions"
 
     if not local_actions_dir.exists():
-        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.")
+        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.", None)
 
     prompt_path = Path(__file__).parent / "compose_action.md"
     with open(prompt_path, "r") as f:
@@ -65,13 +65,15 @@ def compose_action(description: str, name: str | None = None) -> tuple[bool, str
     if local_files:
         lines = []
         for lf in local_files:
-            funcs = []
-            for entry in local_action_index:
-                if entry.get("module", "") == f"local_actions.{lf.stem}":
-                    funcs.append(f"  {entry['function']}({entry.get('signature', '')})")
-            if funcs:
-                lines.append(f"{lf.name}:")
-                lines.extend(funcs)
+            mod_key = f"local_actions.{lf.stem}"
+            info = local_action_index.get(mod_key)
+            if info:
+                func_desc = []
+                for func in info["functions"]:
+                    func_desc.append(f"  {func['function']}({func.get('signature', '')})")
+                if func_desc:
+                    lines.append(f"{lf.name}:")
+                    lines.extend(func_desc)
         if lines:
             existing_files_context = "\n".join(lines)
 
@@ -113,11 +115,11 @@ def compose_action(description: str, name: str | None = None) -> tuple[bool, str
 
     if code.strip().startswith("# SKIP"):
         skip_msg = code.strip().splitlines()[0]
-        return (True, None, skip_msg)
+        return (True, None, skip_msg, None)
 
     filename = name or _parse_name(code)
     if not filename:
-        return (False, None, "Action output must include a # filename.py comment on the first line, or use --name.")
+        return (False, None, "Action output must include a # filename.py comment on the first line, or use --name.", None)
 
     code = _strip_name_line(code)
 
@@ -126,4 +128,4 @@ def compose_action(description: str, name: str | None = None) -> tuple[bool, str
     build_action_index()
     build_local_action_index(project_root)
 
-    return (True, str(local_actions_dir / filename), None)
+    return (True, str(local_actions_dir / filename), None, None)

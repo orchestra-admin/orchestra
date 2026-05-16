@@ -48,12 +48,11 @@ def review_playbook(playbook_path: str) -> str:
     actions_summary = ""
     if all_actions:
         lines = []
-        for entry in all_actions:
-            module = entry.get("module", "")
-            function = entry.get("function", "")
-            sig = entry.get("signature", "")
-            desc = entry.get("description", "")
-            lines.append(f"- {module}.{function}{sig}: {desc}")
+        for mod, info in all_actions.items():
+            for func in info["functions"]:
+                sig = func.get("signature", "")
+                desc = func.get("description", "")
+                lines.append(f"- {mod}.{func['function']}{sig}: {desc}")
         actions_summary = "\n".join(lines)
     else:
         actions_summary = "(No actions available)"

@@ -70,7 +70,7 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
     local_actions = _read_index(project_root / "musicsheets" / "local_actions" / "action_index.json")
     local_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "integration_index.json")
 
-    actions_summary = _format_actions(builtin_actions + local_actions)
+    actions_summary = _format_actions({**builtin_actions, **local_actions})
 
     all_secrets = set()
     for info in {**builtin_integrations, **local_integrations}.values():
@@ -129,9 +129,9 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
     integrations = build_integration_index()
     build_local_action_index(project_root)
     integrations.update(build_local_integration_index(project_root))
-    sync_env_keys(integrations)
+    new_keys = sync_env_keys(integrations)
 
-    return (True, str(output_path), None)
+    return (True, str(output_path), None, new_keys)
 
 
 def compose(target: str, **kwargs) -> tuple[bool, str | None, str | None]:
@@ -143,4 +143,4 @@ def compose(target: str, **kwargs) -> tuple[bool, str | None, str | None]:
     elif target == "integration":
         return _compose_integration(kwargs["description"], kwargs.get("name"))
     else:
-        return (False, None, f"Unknown compose target '{target}'.")
+        return (False, None, f"Unknown compose target '{target}'.", None)

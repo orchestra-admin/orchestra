@@ -13,25 +13,19 @@ def compose_playbook(playbook_path: str) -> None:
         sys.exit(1)
 
     print(f"[*] Composing script for {playbook_path}...")
-    try:
-        ok, path, error = compose("playbook", playbook=playbook_path)
-    except OrchestraError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    ok, path, error, new_keys = compose("playbook", playbook=playbook_path)
     if not ok:
         print(f"Error: {error}", file=sys.stderr)
         sys.exit(1)
     print(f"[+] Output written to {path}")
+    if new_keys:
+        print(f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'.")
 
 
 def compose_action(description: str, name: str | None = None) -> None:
     """Generate an action Python module from a natural language description."""
     print(f"[*] Generating action: {description}")
-    try:
-        ok, path, msg = compose("action", description=description, name=name)
-    except OrchestraError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    ok, path, msg, new_keys = compose("action", description=description, name=name)
     if not ok:
         print(f"Error: {msg}", file=sys.stderr)
         sys.exit(1)
@@ -39,6 +33,8 @@ def compose_action(description: str, name: str | None = None) -> None:
         print(f"[+] Action written to local_actions/{Path(path).name}")
     else:
         print(f"[*] {msg}")
+    if new_keys:
+        print(f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'.")
 
 
 def compose_integration(description: str, name: str | None = None) -> None:
@@ -61,7 +57,7 @@ def compose_integration(description: str, name: str | None = None) -> None:
 def compose_integration(description: str, name: str | None = None) -> None:
     """CLI wrapper to generate an integration module from a natural language description."""
     print(f"[*] Generating integration: {description}")
-    ok, path, msg = compose("integration", description=description, name=name)
+    ok, path, msg, new_keys = compose("integration", description=description, name=name)
     if not ok:
         print(f"Error: {msg}", file=sys.stderr)
         sys.exit(1)
@@ -69,3 +65,5 @@ def compose_integration(description: str, name: str | None = None) -> None:
         print(f"[+] Integration written to local_actions/local_integrations/{Path(path).name}")
     else:
         print(f"[*] {msg}")
+    if new_keys:
+        print(f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'.")

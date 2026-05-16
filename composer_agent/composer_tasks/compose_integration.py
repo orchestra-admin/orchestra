@@ -34,7 +34,7 @@ def compose_integration(description: str, name: str | None = None) -> tuple[bool
     local_integrations_dir = project_root / "musicsheets" / "local_actions" / "local_integrations"
 
     if not local_integrations_dir.parent.exists():
-        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.")
+        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.", None)
 
     prompt_path = Path(__file__).parent / "compose_integration.md"
     with open(prompt_path, "r") as f:
@@ -96,11 +96,11 @@ def compose_integration(description: str, name: str | None = None) -> tuple[bool
 
     if code.strip().startswith("# SKIP"):
         skip_msg = code.strip().splitlines()[0]
-        return (True, None, skip_msg)
+        return (True, None, skip_msg, None)
 
     filename = name or _parse_name(code)
     if not filename:
-        return (False, None, "Integration output must include a # filename.py comment on the first line, or use --name.")
+        return (False, None, "Integration output must include a # filename.py comment on the first line, or use --name.", None)
 
     code = _strip_name_line(code)
 
@@ -108,6 +108,6 @@ def compose_integration(description: str, name: str | None = None) -> tuple[bool
 
     integrations = build_integration_index()
     integrations.update(build_local_integration_index(project_root))
-    sync_env_keys(integrations)
+    new_keys = sync_env_keys(integrations)
 
-    return (True, str(local_integrations_dir / filename), None)
+    return (True, str(local_integrations_dir / filename), None, new_keys)

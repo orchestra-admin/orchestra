@@ -4,7 +4,7 @@ import sys
 import time
 from pathlib import Path
 
-from conductor_agent.conductor_tasks.config import (
+from orchestra_core.config import (
     DEFAULT_DLQ_KEY,
     DEFAULT_TIMEOUT_SECONDS,
     DEACTIVATED_SET_KEY,
@@ -12,16 +12,14 @@ from conductor_agent.conductor_tasks.config import (
     get_project_config_path,
     load_musician_config,
 )
+from orchestra_core.redis import get_redis_client
+import logging
 
-def load_redis_module():
-    try:
-        import redis
-    except ImportError as exc:
-        raise RuntimeError("redis package is required to run the Orchestra musician.") from exc
+logger = logging.getLogger(__name__)
 
-    return redis
 
 def parse_job(raw_job: str) -> dict:
+    """Parse and validate a raw JSON job string into a structured job dictionary."""
     try:
         job = json.loads(raw_job)
     except json.JSONDecodeError as exc:
@@ -48,6 +46,7 @@ def parse_job(raw_job: str) -> dict:
     }
 
 def build_queue_job(payload: dict, source: str = "webhook", metadata: dict | None = None) -> dict:
+    """Build a job dictionary from a payload with source metadata for enqueuing."""
     event_type = payload.get("event_type")
     if not isinstance(event_type, str) or not event_type:
         raise ValueError("Payload must include a non-empty string field 'event_type'.")
@@ -66,11 +65,13 @@ def build_queue_job(payload: dict, source: str = "webhook", metadata: dict | Non
     }
 
 def enqueue_job(redis_client, queue_key: str, job: dict) -> None:
+    """Validate and push a job onto the specified Redis queue."""
     raw_job = json.dumps(job)
     parse_job(raw_job)
     redis_client.rpush(queue_key, raw_job)
 
 def resolve_script_path(project_root: Path, event_type: str) -> Path:
+    """Resolve the musicsheet script file path for a given event type."""
     return project_root / "musicsheets" / f"{event_type}.py"
 
 def execute_job(
@@ -78,6 +79,7 @@ def execute_job(
     project_root: Path | None = None,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict:
+    """Execute a job's musicsheet script as a subprocess and return the result."""
     project_root = project_root or get_project_root()
     script_path = resolve_script_path(project_root, job["event_type"])
 
@@ -120,6 +122,7 @@ def execute_job(
     }
 
 def push_dlq_record(redis_client, dlq_key: str, raw_job: str, result: dict) -> None:
+    """Record a failed job and its result to the dead letter queue in Redis."""
     record = {
         "raw_job": raw_job,
         "result": result,
@@ -134,6 +137,7 @@ def process_raw_job(
     project_root: Path | None = None,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict:
+    """Process a raw job through validation, deactivation check, execution, and DLQ handling."""
     try:
         job = parse_job(raw_job)
     except ValueError as exc:
@@ -142,7 +146,7 @@ def process_raw_job(
             "error": str(exc),
         }
         push_dlq_record(redis_client, dlq_key, raw_job, result)
-        print(f"[!] Invalid job moved to DLQ: {exc}")
+        logger.error("musician.job.invalid", extra={"data": {"error": str(exc)}})
         return result
 
     if redis_client.sismember(DEACTIVATED_SET_KEY, job["event_type"]):
@@ -152,44 +156,45 @@ def process_raw_job(
             "failure_reason": "playbook_deactivated",
         }
         push_dlq_record(redis_client, dlq_key, raw_job, result)
-        print(f"[!] Playbook '{job['event_type']}' is deactivated. Job moved to DLQ.")
+        logger.info("musician.job.skipped_deactivated", extra={"data": {"event_type": job["event_type"]}})
         return result
 
     result = execute_job(job, project_root=project_root, timeout_seconds=timeout_seconds)
     status = result["status"]
 
     if status == "success":
-        print(f"[+] Job completed: {job['event_type']}")
+        logger.info("musician.job.completed", extra={"data": job})
         return result
 
     if status == "missing_script":
-        print(f"[!] No musicsheet found for event_type={job['event_type']}. Dropping job.")
+        logger.warning("musician.job.skipped_missing", extra={"data": {"event_type": job["event_type"]}})
         return result
 
     push_dlq_record(redis_client, dlq_key, raw_job, result)
-    print(f"[!] Job moved to DLQ: {job['event_type']} ({status})")
+    logger.warning("musician.job.dlq", extra={"data": {"event_type": job["event_type"], "status": status}})
     return result
 
 def run_musician() -> int:
+    """Run the musician loop that pulls and executes jobs from the Redis queue."""
+    from orchestra_core.logging import setup_logging
+    setup_logging()
+
     project_root = get_project_root()
     musician_config = load_musician_config(project_root)
-    host = musician_config["host"]
-    port = musician_config["port"]
-    db = musician_config["db"]
     queue_key = musician_config["queue_key"]
     dlq_key = musician_config["dlq_key"]
     timeout_seconds = musician_config["timeout_seconds"]
     block_seconds = musician_config["block_seconds"]
 
-    redis = load_redis_module()
-    redis_client = redis.Redis(host=host, port=port, db=db, decode_responses=True)
+    redis_client = get_redis_client()
     redis_client.ping()
 
-    print(f"[*] Orchestra musician listening on redis://{host}:{port}/{db}")
+    print(f"[*] Orchestra musician started")
     print(f"[*] Project root: {project_root}")
     print(f"[*] Config: {get_project_config_path(project_root)}")
     print(f"[*] Queue: {queue_key}")
     print(f"[*] DLQ: {dlq_key}")
+    logger.info("musician.started", extra={"data": {"project_root": str(project_root), "queue": queue_key, "dlq": dlq_key}})
 
     while True:
         item = redis_client.blpop(queue_key, timeout=block_seconds)

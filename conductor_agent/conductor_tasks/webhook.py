@@ -2,16 +2,20 @@ import hashlib
 import hmac
 import json
 
-from conductor_agent.conductor_tasks.config import get_project_root, load_musician_config
-from conductor_agent.conductor_tasks.secrets import get_secret
+from orchestra_core.config import get_project_root, load_musician_config
+from orchestra_core.secrets import get_secret
+from orchestra_core.redis import get_redis_client
 from conductor_agent.conductor_tasks.musician import (
-    load_redis_module,
     build_queue_job,
     enqueue_job,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def load_server_modules():
+    """Dynamically import and return uvicorn and FastAPI server modules."""
     try:
         import uvicorn
         from fastapi import FastAPI, HTTPException, Request
@@ -27,6 +31,7 @@ def load_server_modules():
 
 
 def get_webhook_secret() -> str:
+    """Retrieve the WEBHOOK_SECRET from the configured secrets backend."""
     try:
         return get_secret("WEBHOOK_SECRET")
     except KeyError:
@@ -34,15 +39,18 @@ def get_webhook_secret() -> str:
 
 
 def get_signature_header(headers) -> str | None:
+    """Extract the webhook HMAC signature from request headers."""
     return headers.get("x-orchestra-signature-256") or headers.get("x-hub-signature-256")
 
 
 def build_signature(raw_body: bytes, secret: str) -> str:
+    """Compute an HMAC SHA-256 signature for a raw request body."""
     digest = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
     return f"sha256={digest}"
 
 
 def is_valid_signature(raw_body: bytes, signature: str | None, secret: str) -> bool:
+    """Verify a webhook request signature against the expected HMAC digest."""
     if not signature:
         return False
 
@@ -51,19 +59,16 @@ def is_valid_signature(raw_body: bytes, signature: str | None, secret: str) -> b
 
 
 def create_webhook_app():
+    """Create and return a FastAPI webhook app with signature verification and Redis enqueuing."""
     modules = load_server_modules()
     FastAPI = modules["FastAPI"]
     HTTPException = modules["HTTPException"]
 
     project_root = get_project_root()
     musician_config = load_musician_config(project_root)
-    host = musician_config["host"]
-    port = musician_config["port"]
-    db = musician_config["db"]
     queue_key = musician_config["queue_key"]
 
-    redis = load_redis_module()
-    redis_client = redis.Redis(host=host, port=port, db=db, decode_responses=True)
+    redis_client = get_redis_client()
     redis_client.ping()
 
     secret = get_webhook_secret()
@@ -98,13 +103,17 @@ def create_webhook_app():
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         enqueue_job(redis_client, queue_key, job)
-        print(f"[*] Enqueued webhook job: {job['event_type']}")
+        logger.info("webhook.request.accepted", extra={"data": {"event_type": job["event_type"], "client_ip": request.client.host if request.client else None}})
         return {"queued": True, "event_type": job["event_type"]}
 
     return app
 
 
 def start_server(port=8080):
+    """Start the Orchestra webhook server on the specified port."""
+    from orchestra_core.logging import setup_logging
+    setup_logging()
+
     modules = load_server_modules()
     uvicorn = modules["uvicorn"]
     app = create_webhook_app()
@@ -112,4 +121,5 @@ def start_server(port=8080):
     print(f"[*] Orchestra webhook server listening on port {port}")
     print(f"[*] Project root: {get_project_root()}")
     print(f"[*] Endpoint: POST /webhook")
+    logger.info("webhook.started", extra={"data": {"port": port}})
     uvicorn.run(app, host="0.0.0.0", port=port)

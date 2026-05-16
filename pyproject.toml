@@ -9,6 +9,7 @@ description = "AI-assisted automation engine for playbook-driven Python workflow
 requires-python = ">=3.11"
 dependencies = [
   "boto3",
+  "croniter",
   "fastapi",
   "redis",
   "uvicorn",
@@ -26,13 +27,13 @@ orchestra = "orchestra:main"
 py-modules = ["orchestra"]
 
 [tool.setuptools.packages.find]
-include = ["actions*", "composer_agent*", "conductor_agent*"]
+include = ["orchestra_core*", "actions*", "composer_agent*", "conductor_agent*", "cli*"]
 
 [tool.setuptools.package-data]
-actions = ["actions_index.json"]
+actions = ["action_index.json"]
 composer_agent = ["composer.md", "composer_tasks/compose_action.md", "composer_tasks/compose_integration.md"]
-conductor_agent = [
-  "review_prompt.md",
+cli = ["review_prompt.md"]
+orchestra_core = [
   "init_assets/.local_config/orchestra.json",
   "init_assets/.env.example",
   "init_assets/docker-compose.yml",
@@ -41,4 +42,5 @@ conductor_agent = [
   "init_assets/musicsheets/*.py",
   "init_assets/musicsheets/local_actions/*",
   "init_assets/musicsheets/local_actions/local_integrations/*",
+  "init_assets/logs/orchestra.log",
 ]

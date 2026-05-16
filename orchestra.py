@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 import argparse
+import json
 import sys
-from composer_agent.composer import compose
-from conductor_agent.conductor import (
-    init_project, print_actions, print_integrations,
-    print_playbooks, activate_playbook, deactivate_playbook, run_playbook,
-    list_schedules, add_schedule, remove_schedule, run_scheduler,
-    run_musician, start_server, review_playbook,
-    push_secrets, list_secrets,
-)
+from cli.compose_cli import compose_playbook, compose_action, compose_integration
+from cli.init_cli import init_project
+from cli.index_cli import print_actions, print_integrations
+from cli.playbook_cli import print_playbooks, activate_playbook, deactivate_playbook, run_playbook, review_playbook
+from cli.schedule_cli import list_schedules, add_schedule, remove_schedule
+from cli.musician_cli import run_musician
+from cli.server_cli import start_server
+from cli.scheduler_cli import run_scheduler
+from cli.secrets_cli import push_secrets, list_secrets
+from orchestra_core.logging import setup_logging
 
 def main():
+    setup_logging()
     parser = argparse.ArgumentParser(description="Orchestra SOAR CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
     
@@ -73,11 +77,11 @@ def main():
     
     if args.command == "compose":
         if args.compose_action == "playbook":
-            compose("playbook", playbook=args.playbook)
+            compose_playbook(args.playbook)
         elif args.compose_action == "action":
-            compose("action", description=args.description, name=args.name)
+            compose_action(args.description, args.name)
         elif args.compose_action == "integration":
-            compose("integration", description=args.description, name=args.name)
+            compose_integration(args.description, args.name)
     elif args.command == "init":
         init_project()
     elif args.command == "actions":
@@ -92,7 +96,6 @@ def main():
         elif args.playbook_action == "deactivate":
             deactivate_playbook(args.event_type)
         elif args.playbook_action == "run":
-            import json
             try:
                 payload = json.loads(args.payload)
             except json.JSONDecodeError:

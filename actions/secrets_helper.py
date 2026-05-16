@@ -1,4 +1,4 @@
-from conductor_agent.conductor_tasks.secrets import get_secret as _get_secret
+from orchestra_core.secrets import get_secret as _get_secret
 
 def get_secret(key: str) -> str:
     """

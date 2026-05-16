@@ -1,5 +1,5 @@
 # slack_integration.py
-from conductor_agent.conductor_tasks.secrets import get_secret
+from orchestra_core.secrets import get_secret
 
 def get_webhook_url() -> str:
     """Retrieve the Slack incoming webhook URL."""

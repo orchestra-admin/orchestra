@@ -1,5 +1,4 @@
 import re
-import sys
 from pathlib import Path
 
 from composer_agent.composer_tasks.composer_helpers import (
@@ -11,9 +10,9 @@ from composer_agent.composer_tasks.composer_helpers import (
     _validate_python,
     _write_action,
 )
-from conductor_agent.conductor_tasks.config import ACTIONS_DIR, get_project_root
-from conductor_agent.conductor_tasks.index import build_action_index, build_local_action_index
-from conductor_agent.conductor_tasks.llm import llm_query
+from orchestra_core.config import ACTIONS_DIR, get_project_root
+from orchestra_core.index import build_action_index, build_local_action_index
+from orchestra_core.llm import llm_query
 
 NAME_PATTERN = re.compile(r"^\#\s*(\w[\w_]*)\.py")
 
@@ -29,17 +28,13 @@ def _strip_name_line(code: str) -> str:
     return NAME_PATTERN.sub("", code.strip(), count=1).strip() + "\n"
 
 
-def compose_action(description: str, name: str | None = None) -> None:
+def compose_action(description: str, name: str | None = None) -> tuple[bool, str | None, str | None]:
+    """Generate an action Python module from a natural language description."""
     project_root = get_project_root()
     local_actions_dir = project_root / "musicsheets" / "local_actions"
 
     if not local_actions_dir.exists():
-        print(
-            "Error: local_actions/ not found. "
-            "Run this command from an initialized Orchestra project.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.")
 
     prompt_path = Path(__file__).parent / "compose_action.md"
     with open(prompt_path, "r") as f:
@@ -82,8 +77,6 @@ def compose_action(description: str, name: str | None = None) -> None:
 
     local_files_context = "\n".join(f"- {f}" for f in (p.name for p in local_files)) if local_files else "(None)"
 
-    print(f"[*] Generating action: {description}")
-
     retry_prompt = (
         "The previous response contained invalid Python code. "
         "Please output ONLY valid Python with no markdown fences or extra text.\n\n"
@@ -114,34 +107,23 @@ def compose_action(description: str, name: str | None = None) -> None:
             break
 
         if attempt < MAX_RETRIES:
-            print(
-                f"[!] Attempt {attempt}/{MAX_RETRIES}: {error}. Retrying...",
-                file=sys.stderr,
-            )
             user_message = retry_prompt + f"Error: {error}\n\n" + user_message
         else:
-            print(
-                f"[!] Attempt {attempt}/{MAX_RETRIES}: {error}. "
-                "Writing output anyway (file may need manual fixes).",
-                file=sys.stderr,
-            )
+            pass
 
     if code.strip().startswith("# SKIP"):
-        print(f"[*] {code.strip().splitlines()[0]}")
-        return
+        skip_msg = code.strip().splitlines()[0]
+        return (True, None, skip_msg)
 
     filename = name or _parse_name(code)
     if not filename:
-        print(
-            "Error: action output must include a # filename.py comment on the first line, or use --name.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        return (False, None, "Action output must include a # filename.py comment on the first line, or use --name.")
 
     code = _strip_name_line(code)
 
     _write_action(local_actions_dir, filename, code)
-    print(f"[+] Action written to local_actions/{filename}")
 
     build_action_index()
     build_local_action_index(project_root)
+
+    return (True, str(local_actions_dir / filename), None)

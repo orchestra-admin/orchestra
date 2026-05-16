@@ -1,5 +1,4 @@
 import re
-import sys
 from pathlib import Path
 
 from composer_agent.composer_tasks.composer_helpers import (
@@ -11,9 +10,9 @@ from composer_agent.composer_tasks.composer_helpers import (
     _validate_python,
     _write_action,
 )
-from conductor_agent.conductor_tasks.config import ACTIONS_DIR, get_project_root
-from conductor_agent.conductor_tasks.index import build_integration_index, build_local_integration_index
-from conductor_agent.conductor_tasks.llm import llm_query
+from orchestra_core.config import ACTIONS_DIR, get_project_root
+from orchestra_core.index import build_integration_index, build_local_integration_index, sync_env_keys
+from orchestra_core.llm import llm_query
 
 NAME_PATTERN = re.compile(r"^\#\s*(\w[\w_]*)\.py")
 
@@ -29,17 +28,13 @@ def _strip_name_line(code: str) -> str:
     return NAME_PATTERN.sub("", code.strip(), count=1).strip() + "\n"
 
 
-def compose_integration(description: str, name: str | None = None) -> None:
+def compose_integration(description: str, name: str | None = None) -> tuple[bool, str | None, str | None]:
+    """Generate an integration Python module from a natural language description."""
     project_root = get_project_root()
     local_integrations_dir = project_root / "musicsheets" / "local_actions" / "local_integrations"
 
     if not local_integrations_dir.parent.exists():
-        print(
-            "Error: local_actions/ not found. "
-            "Run this command from an initialized Orchestra project.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.")
 
     prompt_path = Path(__file__).parent / "compose_integration.md"
     with open(prompt_path, "r") as f:
@@ -66,8 +61,6 @@ def compose_integration(description: str, name: str | None = None) -> None:
     secrets_context = ""
     if all_secrets:
         secrets_context = "\n".join(f"- {k}" for k in sorted(all_secrets))
-
-    print(f"[*] Generating integration: {description}")
 
     retry_prompt = (
         "The previous response contained invalid Python code. "
@@ -97,34 +90,24 @@ def compose_integration(description: str, name: str | None = None) -> None:
             break
 
         if attempt < MAX_RETRIES:
-            print(
-                f"[!] Attempt {attempt}/{MAX_RETRIES}: {error}. Retrying...",
-                file=sys.stderr,
-            )
             user_message = retry_prompt + f"Error: {error}\n\n" + user_message
         else:
-            print(
-                f"[!] Attempt {attempt}/{MAX_RETRIES}: {error}. "
-                "Writing output anyway (file may need manual fixes).",
-                file=sys.stderr,
-            )
+            pass
 
     if code.strip().startswith("# SKIP"):
-        print(f"[*] {code.strip().splitlines()[0]}")
-        return
+        skip_msg = code.strip().splitlines()[0]
+        return (True, None, skip_msg)
 
     filename = name or _parse_name(code)
     if not filename:
-        print(
-            "Error: integration output must include a # filename.py comment on the first line, or use --name.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        return (False, None, "Integration output must include a # filename.py comment on the first line, or use --name.")
 
     code = _strip_name_line(code)
 
     _write_action(local_integrations_dir, filename, code)
-    print(f"[+] Integration written to local_actions/local_integrations/{filename}")
 
-    build_integration_index()
-    build_local_integration_index(project_root)
+    integrations = build_integration_index()
+    integrations.update(build_local_integration_index(project_root))
+    sync_env_keys(integrations)
+
+    return (True, str(local_integrations_dir / filename), None)

@@ -1,9 +1,8 @@
 import re
-import sys
 from pathlib import Path
 
-from composer_agent.composer_tasks.compose_action import compose_action
-from composer_agent.composer_tasks.compose_integration import compose_integration
+from composer_agent.composer_tasks.compose_action import compose_action as _compose_action
+from composer_agent.composer_tasks.compose_integration import compose_integration as _compose_integration
 from composer_agent.composer_tasks.composer_helpers import (
     MAX_RETRIES,
     _format_actions,
@@ -13,13 +12,14 @@ from composer_agent.composer_tasks.composer_helpers import (
     _validate_python,
     _write_action,
 )
-from conductor_agent.conductor_tasks.llm import llm_query
-from conductor_agent.conductor_tasks.config import ACTIONS_DIR, get_project_root
-from conductor_agent.conductor_tasks.index import (
+from orchestra_core.llm import llm_query
+from orchestra_core.config import ACTIONS_DIR, get_project_root
+from orchestra_core.index import (
     build_action_index,
     build_integration_index,
     build_local_action_index,
     build_local_integration_index,
+    sync_env_keys,
 )
 
 ACTIONS_MARKER = re.compile(r"###ACTIONS (.+?)###(.*?)###END ACTIONS###", re.DOTALL)
@@ -44,18 +44,14 @@ def _parse_output(raw: str) -> tuple[dict[str, str], str]:
     return (actions, script)
 
 
-def compose_playbook(playbook_path, output_path=None):
+def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None, str | None]:
+    """Convert a playbook markdown file into an executable musicsheet script."""
     project_root = get_project_root()
     playbook_path = Path(playbook_path)
     musicsheets_dir = project_root / "musicsheets"
 
     if not musicsheets_dir.is_dir():
-        print(
-            "Error: musicsheets/ not found in current directory. "
-            "Run this command from an initialized Orchestra project.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        return (False, None, "musicsheets/ not found. Run this command from an initialized Orchestra project.")
 
     if not output_path:
         output_path = musicsheets_dir / f"{playbook_path.stem}.py"
@@ -69,7 +65,7 @@ def compose_playbook(playbook_path, output_path=None):
     with open(prompt_path, "r") as f:
         system_prompt = f.read()
 
-    builtin_actions = _read_index(ACTIONS_DIR / "actions_index.json")
+    builtin_actions = _read_index(ACTIONS_DIR / "action_index.json")
     builtin_integrations = _read_integration_index(ACTIONS_DIR / "integrations" / "integration_index.json")
     local_actions = _read_index(project_root / "musicsheets" / "local_actions" / "action_index.json")
     local_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "integration_index.json")
@@ -84,8 +80,6 @@ def compose_playbook(playbook_path, output_path=None):
     secrets_context = ""
     if all_secrets:
         secrets_context = "\n".join(f"- {k}" for k in sorted(all_secrets))
-
-    print(f"[*] Composing script for {playbook_path}...")
 
     retry_prompt = (
         "The previous response contained invalid Python code. "
@@ -121,41 +115,32 @@ def compose_playbook(playbook_path, output_path=None):
         if validation_error is None:
             for filename, action_code in actions.items():
                 _write_action(local_actions_dir, filename, action_code)
-                print(f"[+] Action written to local_actions/{filename}")
             with open(output_path, "w") as f:
                 f.write(script)
             break
 
         if attempt < MAX_RETRIES:
-            print(
-                f"[!] Attempt {attempt}/{MAX_RETRIES}: {validation_error}. Retrying...",
-                file=sys.stderr,
-            )
             user_message = retry_prompt + f"Error: {validation_error}\n\n" + user_message
         else:
-            print(
-                f"[!] Attempt {attempt}/{MAX_RETRIES}: {validation_error}. "
-                "Writing output anyway (script may need manual fixes).",
-                file=sys.stderr,
-            )
             with open(output_path, "w") as f:
                 f.write(script)
 
-    print(f"[+] Output written to {output_path}")
-
     build_action_index()
-    build_integration_index()
+    integrations = build_integration_index()
     build_local_action_index(project_root)
-    build_local_integration_index(project_root)
+    integrations.update(build_local_integration_index(project_root))
+    sync_env_keys(integrations)
+
+    return (True, str(output_path), None)
 
 
-def compose(target: str, **kwargs) -> None:
+def compose(target: str, **kwargs) -> tuple[bool, str | None, str | None]:
+    """Route compose commands to the appropriate target (playbook, action, or integration)."""
     if target == "playbook":
-        compose_playbook(kwargs["playbook"])
+        return compose_playbook(kwargs["playbook"])
     elif target == "action":
-        compose_action(kwargs["description"], kwargs.get("name"))
+        return _compose_action(kwargs["description"], kwargs.get("name"))
     elif target == "integration":
-        compose_integration(kwargs["description"], kwargs.get("name"))
+        return _compose_integration(kwargs["description"], kwargs.get("name"))
     else:
-        print(f"Error: Unknown compose target '{target}'.", file=sys.stderr)
-        sys.exit(1)
+        return (False, None, f"Unknown compose target '{target}'.")

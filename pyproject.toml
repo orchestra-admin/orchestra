@@ -27,7 +27,7 @@ orchestra = "orchestra:main"
 py-modules = ["orchestra"]
 
 [tool.setuptools.packages.find]
-include = ["orchestra_core*", "actions*", "composer_agent*", "conductor_agent*", "cli*"]
+include = ["orchestra_core*", "actions*", "composer_agent*", "conductor*", "cli*"]
 
 [tool.setuptools.package-data]
 actions = ["action_index.json"]

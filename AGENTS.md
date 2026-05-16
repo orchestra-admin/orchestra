@@ -85,22 +85,22 @@ def _openai_query(...):
 
 No global caches, singletons, or mutable defaults.
 
+### Keep it simple
+
+No over-engineering. Implement the simplest thing that satisfies the requirement. No unnecessary abstractions, no future-proofing, no speculative features.
+
 ---
 
-## Naming Conventions
+## Workflow
 
-| What | Format |
-|---|---|
-| Module names | `conductor/`, `composer_agent/`, `orchestra_core/`, `cli/` |
-| Index files | `action_index.json`, `integration_index.json` (both grouped dict by module) |
-| Event names (logging) | Dot notation: `musician.job.failed`, `compose.playbook.succeeded` |
-| CLI commands | Subcommand patterns: `compose playbook`, `compose action`, `secrets push` |
+- Work incrementally — implement one step of the plan at a time, not the entire plan in one pass.
+- If a task is complex, break it into smaller sub-tasks and complete each before moving on.
 
 ---
 
 ## Git
 
-- Small, logical commits. Split refactors, features, and fixes.
+- Small, logical commits. Split refactors, features, and fixes. Do not generate large chunks of code in a single commit.
 - Commit titles under 60 characters.
 - Never commit `.env` files or secrets.
 - Never amend or force push unless explicitly asked.

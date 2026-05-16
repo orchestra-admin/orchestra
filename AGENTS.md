@@ -55,7 +55,7 @@ def compose_playbook(playbook_path) -> tuple[bool, str | None, str | None]:
 
 ### Docstrings
 
-Every public function (no underscore prefix) must have a one-line docstring describing what it does.
+Every public function (no underscore prefix) must have a small (1-3 sentences) docstring describing what it does.
 
 ```python
 def get_secret(key: str) -> str:
@@ -95,6 +95,17 @@ No over-engineering. Implement the simplest thing that satisfies the requirement
 
 - Work incrementally — implement one step of the plan at a time, not the entire plan in one pass.
 - If a task is complex, break it into smaller sub-tasks and complete each before moving on.
+
+---
+
+## Naming Conventions
+
+| What | Format |
+|---|---|
+| Module names | `conductor/`, `composer_agent/`, `orchestra_core/`, `cli/` |
+| Index files | `action_index.json`, `integration_index.json` (both grouped dict by module) |
+| Event names (logging) | Dot notation: `musician.job.failed`, `compose.playbook.succeeded` |
+| CLI commands | Subcommand patterns: `compose playbook`, `compose action`, `secrets push` |
 
 ---
 

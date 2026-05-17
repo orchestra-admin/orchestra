@@ -1,7 +1,10 @@
+import logging
 import os
 from pathlib import Path
 
 from orchestra_core.config import get_project_root, load_project_config
+
+logger = logging.getLogger(__name__)
 
 
 def _load_secrets_config() -> dict:
@@ -174,3 +177,37 @@ def get_secret(key: str) -> str:
         )
 
     return _BACKENDS[backend_name](key)
+
+
+def sync_env_keys(integrations: dict) -> list[str]:
+    """Append missing secret key labels from the integration index to .env.
+
+    Returns the list of keys that were newly added.
+    """
+    all_secrets = set()
+    for info in integrations.values():
+        for key in info.get("secrets", []):
+            all_secrets.add(key)
+
+    if not all_secrets:
+        return []
+
+    project_root = get_project_root()
+    env_file = project_root / ".env"
+    existing_lines = env_file.read_text().splitlines() if env_file.exists() else []
+    existing_keys = set()
+    for line in existing_lines:
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            existing_keys.add(line.split("=", 1)[0].strip())
+
+    missing = sorted(all_secrets - existing_keys)
+    if missing:
+        with open(env_file, "a") as f:
+            if existing_lines and existing_lines[-1].strip() != "":
+                f.write("\n")
+            for key in missing:
+                f.write(f"{key}=\n")
+        logger.info("admin.env.synced", extra={"data": {"added": len(missing), "keys": sorted(missing)}})
+
+    return missing

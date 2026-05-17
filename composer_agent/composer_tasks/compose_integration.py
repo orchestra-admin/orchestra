@@ -11,7 +11,8 @@ from composer_agent.composer_tasks.composer_helpers import (
     _write_action,
 )
 from orchestra_core.config import ACTIONS_DIR, get_project_root
-from orchestra_core.index import build_integration_index, build_local_integration_index, sync_env_keys
+from orchestra_core.index import build_integration_index
+from orchestra_core.secrets import sync_env_keys
 from orchestra_core.llm import llm_query
 
 NAME_PATTERN = re.compile(r"^\#\s*(\w[\w_]*)\.py")
@@ -106,8 +107,7 @@ def compose_integration(description: str, name: str | None = None) -> tuple[bool
 
     _write_action(local_integrations_dir, filename, code)
 
-    integrations = build_integration_index()
-    integrations.update(build_local_integration_index(project_root))
+    integrations = build_integration_index(project_root)
     new_keys = sync_env_keys(integrations)
 
     return (True, str(local_integrations_dir / filename), None, new_keys)

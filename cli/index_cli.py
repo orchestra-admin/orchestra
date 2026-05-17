@@ -1,5 +1,5 @@
-from orchestra_core.index import build_action_index, build_local_action_index, build_integration_index, build_local_integration_index
 from orchestra_core.config import get_project_root
+from orchestra_core.index import build_action_index, build_integration_index
 
 
 def _print_index(title: str, items: list | dict) -> None:
@@ -42,15 +42,9 @@ def _print_index(title: str, items: list | dict) -> None:
 
 def print_actions():
     """Print all available actions from built-in and local action indices."""
-    actions_list = build_action_index()
-    project_root = get_project_root()
-    actions_list.extend(build_local_action_index(project_root))
-    _print_index("Available Orchestra Actions", actions_list)
+    _print_index("Available Orchestra Actions", build_action_index(get_project_root()))
 
 
 def print_integrations():
     """Print all available integrations from built-in and local integration indices."""
-    integrations = build_integration_index()
-    project_root = get_project_root()
-    integrations.update(build_local_integration_index(project_root))
-    _print_index("Available Orchestra Integrations", integrations)
+    _print_index("Available Orchestra Integrations", build_integration_index(get_project_root()))

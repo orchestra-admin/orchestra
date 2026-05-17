@@ -11,7 +11,7 @@ from composer_agent.composer_tasks.composer_helpers import (
     _write_action,
 )
 from orchestra_core.config import ACTIONS_DIR, get_project_root
-from orchestra_core.index import build_action_index, build_local_action_index
+from orchestra_core.index import build_action_index
 from orchestra_core.llm import llm_query
 
 NAME_PATTERN = re.compile(r"^\#\s*(\w[\w_]*)\.py")
@@ -125,7 +125,6 @@ def compose_action(description: str, name: str | None = None) -> tuple[bool, str
 
     _write_action(local_actions_dir, filename, code)
 
-    build_action_index()
-    build_local_action_index(project_root)
+    build_action_index(project_root)
 
     return (True, str(local_actions_dir / filename), None, None)

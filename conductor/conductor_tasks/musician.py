@@ -112,29 +112,40 @@ def execute_job(
             timeout=timeout_seconds,
         )
     except subprocess.TimeoutExpired as exc:
+        MAX_OUTPUT_CHARS = 500
         return {
             "status": "timeout",
             "event_type": job["event_type"],
             "script_path": str(script_path),
-            "stdout": exc.stdout or "",
-            "stderr": exc.stderr or "",
+            "stdout": (exc.stdout or "")[:MAX_OUTPUT_CHARS],
+            "stderr": (exc.stderr or "")[:MAX_OUTPUT_CHARS],
             "timeout_seconds": timeout_seconds,
         }
 
     status = "success" if result.returncode == 0 else "failed"
+    MAX_OUTPUT_CHARS = 500
     return {
         "status": status,
         "event_type": job["event_type"],
         "script_path": str(script_path),
         "returncode": result.returncode,
-        "stdout": result.stdout,
-        "stderr": result.stderr,
+        "stdout": result.stdout[:MAX_OUTPUT_CHARS] if result.stdout else "",
+        "stderr": result.stderr[:MAX_OUTPUT_CHARS] if result.stderr else "",
     }
 
 def push_dlq_record(redis_client, dlq_key: str, raw_job: str, result: dict) -> None:
-    """Record a failed job and its result to the dead letter queue in Redis."""
+    """Record a failed job and its result to the dead letter queue in Redis.
+
+    Strips the payload from raw_job to avoid storing sensitive data.
+    """
+    safe_job = raw_job
+    try:
+        job = json.loads(raw_job)
+        safe_job = json.dumps({"event_type": job.get("event_type"), "metadata": job.get("metadata")})
+    except Exception:
+        pass
     record = {
-        "raw_job": raw_job,
+        "raw_job": safe_job,
         "result": result,
         "failed_at": int(time.time()),
     }
@@ -179,7 +190,11 @@ def process_raw_job(
     status = result["status"]
 
     if status == "success":
-        logger.info("musician.job.completed", extra={"data": job})
+        logger.info("musician.job.completed", extra={"data": {
+            "event_type": job["event_type"],
+            "source": job.get("metadata", {}).get("source"),
+            "returncode": result.get("returncode"),
+        }})
         return result
 
     if status == "missing_script":

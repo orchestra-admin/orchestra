@@ -123,6 +123,7 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
             with open(output_path, "w") as f:
                 f.write(script)
 
+    build_action_index(project_root)
     integrations = build_integration_index(project_root)
     new_keys = sync_env_keys(integrations)
 

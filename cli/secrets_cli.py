@@ -88,8 +88,8 @@ def list_secrets() -> None:
     project_root = get_project_root()
 
     index_paths = [
-        ACTIONS_DIR / "integrations" / "integration_index.json",
-        project_root / "musicsheets" / "local_actions" / "local_integrations" / "integration_index.json",
+        project_root / "musicsheets" / "local_actions" / "local_integrations" / "builtin_integration_index.json",
+        project_root / "musicsheets" / "local_actions" / "local_integrations" / "local_integration_index.json",
     ]
 
     all_secrets = set()

@@ -26,12 +26,12 @@ def _extract_secret_keys(filepath: Path) -> list[str]:
     return sorted(keys)
 
 
-def _build_func_index_from_dir(directory: Path, module_prefix: str, output_json_name: str) -> dict:
+def _build_func_index_from_dir(directory: Path, module_prefix: str, output_json_path: Path) -> dict:
     """Scan .py files in a directory and return a grouped dict index with module name as key.
 
     Each module entry contains a secrets list extracted from get_secret() calls
     and a functions list with signatures and docstrings for each public function.
-    Writes the resulting dict to disk as JSON.
+    Writes the resulting dict to disk at output_json_path.
     """
     if not directory.exists():
         return {}
@@ -70,8 +70,8 @@ def _build_func_index_from_dir(directory: Path, module_prefix: str, output_json_
         if functions:
             grouped[module_name] = {"secrets": secret_keys, "functions": functions}
 
-    index_path = directory / output_json_name
-    with open(index_path, "w") as f:
+    output_json_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_json_path, "w") as f:
         json.dump(grouped, f, indent=4)
 
     return grouped
@@ -83,12 +83,10 @@ def build_action_index(project_root: Path) -> dict:
     if musicsheets_path not in sys.path:
         sys.path.insert(0, musicsheets_path)
 
-    actions = _build_func_index_from_dir(ACTIONS_DIR, "actions", "action_index.json")
-    actions.update(_build_func_index_from_dir(
-        project_root / "musicsheets" / "local_actions",
-        "local_actions",
-        "action_index.json",
-    ))
+    local_base = project_root / "musicsheets" / "local_actions"
+
+    actions = _build_func_index_from_dir(ACTIONS_DIR, "actions", local_base / "builtin_action_index.json")
+    actions.update(_build_func_index_from_dir(local_base, "local_actions", local_base / "local_action_index.json"))
     return actions
 
 
@@ -98,10 +96,8 @@ def build_integration_index(project_root: Path) -> dict:
     if musicsheets_path not in sys.path:
         sys.path.insert(0, musicsheets_path)
 
-    integrations = _build_func_index_from_dir(ACTIONS_DIR / "integrations", "actions.integrations", "integration_index.json")
-    integrations.update(_build_func_index_from_dir(
-        project_root / "musicsheets" / "local_actions" / "local_integrations",
-        "local_actions.local_integrations",
-        "integration_index.json",
-    ))
+    local_base = project_root / "musicsheets" / "local_actions" / "local_integrations"
+
+    integrations = _build_func_index_from_dir(ACTIONS_DIR / "integrations", "actions.integrations", local_base / "builtin_integration_index.json")
+    integrations.update(_build_func_index_from_dir(local_base, "local_actions.local_integrations", local_base / "local_integration_index.json"))
     return integrations

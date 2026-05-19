@@ -40,7 +40,7 @@ def compose_action(description: str, name: str | None = None) -> tuple[bool, str
     with open(prompt_path, "r") as f:
         system_prompt = f.read()
 
-    builtin_integrations = _read_integration_index(ACTIONS_DIR / "integrations" / "integration_index.json")
+    builtin_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "builtin_integration_index.json")
     local_action_index = _read_index(project_root / "musicsheets" / "local_actions" / "action_index.json")
     local_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "integration_index.json")
 

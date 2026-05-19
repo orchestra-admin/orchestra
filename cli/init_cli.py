@@ -24,6 +24,10 @@ def init_project() -> None:
 
     shutil.copytree(INIT_ASSETS_DIR, project_root, dirs_exist_ok=True)
 
+    from orchestra_core.index import build_action_index, build_integration_index
+    build_action_index(project_root)
+    build_integration_index(project_root)
+
     env_example = project_root / ".env.example"
     env_file = project_root / ".env"
 

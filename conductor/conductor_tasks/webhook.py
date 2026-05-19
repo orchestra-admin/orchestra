@@ -5,6 +5,7 @@ import json
 from orchestra_core.config import get_project_root, load_musician_config, MAX_WEBHOOK_BODY_BYTES
 from orchestra_core.secrets import get_secret
 from orchestra_core.redis import get_redis_client
+from orchestra_core.logging import setup_logging
 from conductor.conductor_tasks.musician import (
     build_queue_job,
     enqueue_job,
@@ -117,7 +118,6 @@ def create_webhook_app():
 
 def start_server(port=8080):
     """Start the Orchestra webhook server on the specified port."""
-    from orchestra_core.logging import setup_logging
     setup_logging()
 
     modules = load_server_modules()

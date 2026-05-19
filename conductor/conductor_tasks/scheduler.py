@@ -11,6 +11,7 @@ from orchestra_core.config import (
     load_project_config,
 )
 from orchestra_core.redis import get_redis_client
+from orchestra_core.logging import setup_logging
 from conductor.conductor_tasks.musician import (
     build_queue_job,
     enqueue_job,
@@ -27,7 +28,6 @@ def load_schedules() -> dict:
 
 def run_scheduler() -> None:
     """Run the scheduler loop that enqueues scheduled jobs on their cron intervals."""
-    from orchestra_core.logging import setup_logging
     setup_logging()
 
     project_root = get_project_root()

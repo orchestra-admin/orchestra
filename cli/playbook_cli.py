@@ -7,6 +7,8 @@ from orchestra_core.config import (
 )
 from orchestra_core.redis import get_redis_client
 from orchestra_core.exceptions import OrchestraError
+from conductor.conductor_tasks.musician import build_queue_job, execute_job
+from composer_agent.composer_tasks.review import review_playbook as _review_playbook
 
 
 def is_playbook_deactivated(redis_client, event_type: str) -> bool:
@@ -77,7 +79,6 @@ def print_playbooks():
 
 def run_playbook(event_type: str, payload: dict | None = None) -> None:
     """Manually execute a playbook by its event type with an optional payload."""
-    from conductor.conductor_tasks.musician import build_queue_job, execute_job
 
     payload = payload or {}
     payload["event_type"] = event_type
@@ -109,8 +110,6 @@ def run_playbook(event_type: str, payload: dict | None = None) -> None:
 
 def review_playbook(playbook_path: str) -> None:
     """Review a playbook markdown file using the composer agent's reviewer."""
-    from composer_agent.composer_tasks.review import review_playbook as _review
-
     playbook_file = Path(playbook_path)
 
     if not playbook_file.exists():
@@ -123,7 +122,7 @@ def review_playbook(playbook_path: str) -> None:
 
     print(f"[*] Reviewing playbook: {playbook_path}...")
     try:
-        result = _review(playbook_path)
+        result = _review_playbook(playbook_path)
     except OrchestraError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

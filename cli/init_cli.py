@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 from orchestra_core.config import INIT_ASSETS_DIR, get_project_root
+from orchestra_core.index import build_action_index, build_integration_index
 
 
 def _is_docker_installed() -> bool:
@@ -24,7 +25,6 @@ def init_project() -> None:
 
     shutil.copytree(INIT_ASSETS_DIR, project_root, dirs_exist_ok=True)
 
-    from orchestra_core.index import build_action_index, build_integration_index
     build_action_index(project_root)
     build_integration_index(project_root)
 

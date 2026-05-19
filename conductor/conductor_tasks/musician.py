@@ -13,6 +13,7 @@ from orchestra_core.config import (
     load_musician_config,
 )
 from orchestra_core.redis import get_redis_client
+from orchestra_core.logging import setup_logging
 import logging
 
 logger = logging.getLogger(__name__)
@@ -209,7 +210,6 @@ def process_raw_job(
 
 def run_musician() -> int:
     """Run the musician loop that pulls and executes jobs from the Redis queue."""
-    from orchestra_core.logging import setup_logging
     setup_logging()
 
     project_root = get_project_root()

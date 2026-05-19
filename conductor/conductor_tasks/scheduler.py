@@ -47,6 +47,10 @@ def run_scheduler() -> None:
         schedules = load_schedules()
 
         for event_type, cron_expr in schedules.items():
+            if not croniter.is_valid(cron_expr):
+                logger.warning("scheduler.cron.invalid_expression", extra={"data": {"event_type": event_type, "cron": cron_expr}})
+                continue
+
             if not croniter.match(cron_expr, now):
                 continue
 

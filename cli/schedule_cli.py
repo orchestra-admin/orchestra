@@ -1,4 +1,7 @@
 import json
+import sys
+
+from croniter import croniter
 
 from orchestra_core.config import get_project_config_path, get_project_root
 
@@ -42,6 +45,10 @@ def list_schedules():
 
 def add_schedule(event_type: str, cron_expr: str):
     """Add or update a cron schedule for the given event type."""
+    if not croniter.is_valid(cron_expr):
+        print(f"Error: Invalid cron expression '{cron_expr}'. Must be a valid 5-field cron expression.", file=sys.stderr)
+        sys.exit(1)
+
     data = _load_config()
     schedules = data.setdefault("schedules", {})
 

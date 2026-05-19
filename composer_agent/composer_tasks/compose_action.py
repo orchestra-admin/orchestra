@@ -35,7 +35,7 @@ def compose_action(description: str, name: str | None = None) -> ComposeResult:
     local_actions_dir = project_root / "musicsheets" / "local_actions"
 
     if not local_actions_dir.exists():
-        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.", None)
+        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.", [])
 
     build_action_index(project_root)
     build_integration_index(project_root)
@@ -119,19 +119,19 @@ def compose_action(description: str, name: str | None = None) -> ComposeResult:
 
     if code.strip().startswith("# SKIP"):
         skip_msg = code.strip().splitlines()[0]
-        return (True, None, skip_msg, None)
+        return (True, None, skip_msg, [])
 
     filename = name or _parse_name(code)
     if not filename:
-        return (False, None, "Action output must include a # filename.py comment on the first line, or use --name.", None)
+        return (False, None, "Action output must include a # filename.py comment on the first line, or use --name.", [])
 
     code = _strip_name_line(code)
 
     try:
         _write_action(local_actions_dir, filename, code)
     except ValueError as e:
-        return (False, None, str(e), None)
+        return (False, None, str(e), [])
 
     build_action_index(project_root)
 
-    return (True, str(local_actions_dir / filename), None, None)
+    return (True, str(local_actions_dir / filename), None, [])

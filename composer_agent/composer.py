@@ -47,7 +47,7 @@ def compose_playbook(playbook_path, output_path=None) -> ComposeResult:
     musicsheets_dir = project_root / "musicsheets"
 
     if not musicsheets_dir.is_dir():
-        return (False, None, "musicsheets/ not found. Run this command from an initialized Orchestra project.")
+        return (False, None, "musicsheets/ not found. Run this command from an initialized Orchestra project.", [])
 
     build_action_index(project_root)
     build_integration_index(project_root)
@@ -116,7 +116,7 @@ def compose_playbook(playbook_path, output_path=None) -> ComposeResult:
                 try:
                     _write_action(local_actions_dir, filename, action_code)
                 except ValueError as e:
-                    return (False, None, str(e), None)
+                    return (False, None, str(e), [])
             with open(output_path, "w") as f:
                 f.write(script)
             break
@@ -143,4 +143,4 @@ def compose(target: str, **kwargs) -> ComposeResult:
     elif target == "integration":
         return _compose_integration(kwargs["description"], kwargs.get("name"))
     else:
-        return (False, None, f"Unknown compose target '{target}'.", None)
+        return (False, None, f"Unknown compose target '{target}'.", [])

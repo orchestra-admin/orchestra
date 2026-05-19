@@ -36,7 +36,7 @@ def compose_integration(description: str, name: str | None = None) -> ComposeRes
     local_integrations_dir = project_root / "musicsheets" / "local_actions" / "local_integrations"
 
     if not local_integrations_dir.parent.exists():
-        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.", None)
+        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.", [])
 
     build_action_index(project_root)
     build_integration_index(project_root)
@@ -101,18 +101,18 @@ def compose_integration(description: str, name: str | None = None) -> ComposeRes
 
     if code.strip().startswith("# SKIP"):
         skip_msg = code.strip().splitlines()[0]
-        return (True, None, skip_msg, None)
+        return (True, None, skip_msg, [])
 
     filename = name or _parse_name(code)
     if not filename:
-        return (False, None, "Integration output must include a # filename.py comment on the first line, or use --name.", None)
+        return (False, None, "Integration output must include a # filename.py comment on the first line, or use --name.", [])
 
     code = _strip_name_line(code)
 
     try:
         _write_action(local_integrations_dir, filename, code)
     except ValueError as e:
-        return (False, None, str(e), None)
+        return (False, None, str(e), [])
 
     integrations = build_integration_index(project_root)
     new_keys = sync_env_keys(integrations)

@@ -14,7 +14,7 @@ from composer_agent.composer_tasks.composer_helpers import (
 )
 from orchestra_core.llm import llm_query
 from orchestra_core.config import ACTIONS_DIR, get_project_root
-from orchestra_core.index import get_actions_index, get_integrations_index
+from orchestra_core.index import build_action_index, build_integration_index
 from orchestra_core.secrets import sync_env_keys
 
 ACTIONS_MARKER = re.compile(r"###ACTIONS (.+?)###(.*?)###END ACTIONS###", re.DOTALL)
@@ -123,8 +123,8 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
             with open(output_path, "w") as f:
                 f.write(script)
 
-    get_actions_index(project_root)
-    integrations = get_integrations_index(project_root)
+    build_action_index(project_root)
+    integrations = build_integration_index(project_root)
     new_keys = sync_env_keys(integrations)
 
     return (True, str(output_path), None, new_keys)

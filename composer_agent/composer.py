@@ -109,7 +109,10 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
 
         if validation_error is None:
             for filename, action_code in actions.items():
-                _write_action(local_actions_dir, filename, action_code)
+                try:
+                    _write_action(local_actions_dir, filename, action_code)
+                except ValueError as e:
+                    return (False, None, str(e), None)
             with open(output_path, "w") as f:
                 f.write(script)
             break

@@ -123,7 +123,10 @@ def compose_action(description: str, name: str | None = None) -> tuple[bool, str
 
     code = _strip_name_line(code)
 
-    _write_action(local_actions_dir, filename, code)
+    try:
+        _write_action(local_actions_dir, filename, code)
+    except ValueError as e:
+        return (False, None, str(e), None)
 
     build_action_index(project_root)
 

@@ -105,7 +105,10 @@ def compose_integration(description: str, name: str | None = None) -> tuple[bool
 
     code = _strip_name_line(code)
 
-    _write_action(local_integrations_dir, filename, code)
+    try:
+        _write_action(local_integrations_dir, filename, code)
+    except ValueError as e:
+        return (False, None, str(e), None)
 
     integrations = build_integration_index(project_root)
     new_keys = sync_env_keys(integrations)

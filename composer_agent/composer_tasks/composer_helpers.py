@@ -28,7 +28,12 @@ def _validate_python(code: str, label: str = "<composer_output>") -> str | None:
 
 
 def _write_action(base_dir: Path, relative_path: str, code: str) -> None:
-    target = base_dir / relative_path
+    if ".." in relative_path or "/" in relative_path or "\\" in relative_path:
+        raise ValueError(f"Invalid action filename '{relative_path}': must be a simple stem or <name>.py")
+
+    target = (base_dir / relative_path).resolve()
+    if not str(target).startswith(str(base_dir.resolve())):
+        raise ValueError(f"Invalid action filename '{relative_path}': path escapes base directory")
     target.parent.mkdir(parents=True, exist_ok=True)
     code = code.strip() + "\n"
 

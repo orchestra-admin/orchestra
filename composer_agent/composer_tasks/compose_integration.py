@@ -11,7 +11,7 @@ from composer_agent.composer_tasks.composer_helpers import (
     _write_action,
 )
 from orchestra_core.config import ACTIONS_DIR, get_project_root
-from orchestra_core.index import get_integration_indexes
+from orchestra_core.index import get_integrations_index
 from orchestra_core.secrets import sync_env_keys
 from orchestra_core.llm import llm_query
 
@@ -110,7 +110,7 @@ def compose_integration(description: str, name: str | None = None) -> tuple[bool
     except ValueError as e:
         return (False, None, str(e), None)
 
-    integrations = get_integration_indexes(project_root)
+    integrations = get_integrations_index(project_root)
     new_keys = sync_env_keys(integrations)
 
     return (True, str(local_integrations_dir / filename), None, new_keys)

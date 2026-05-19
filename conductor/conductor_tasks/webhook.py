@@ -78,6 +78,8 @@ def create_webhook_app():
     @app.post("/webhook")
     async def receive_webhook(request: Request):
         raw_body = await request.body()
+        if len(raw_body) > 1_048_576:  # 1 MB
+            raise HTTPException(status_code=413, detail="Request body too large")
         signature = get_signature_header(request.headers)
 
         if not is_valid_signature(raw_body, signature, secret):

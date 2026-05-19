@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import json
 
-from orchestra_core.config import get_project_root, load_musician_config
+from orchestra_core.config import get_project_root, load_musician_config, MAX_WEBHOOK_BODY_BYTES
 from orchestra_core.secrets import get_secret
 from orchestra_core.redis import get_redis_client
 from conductor.conductor_tasks.musician import (
@@ -78,7 +78,7 @@ def create_webhook_app():
     @app.post("/webhook")
     async def receive_webhook(request: Request):
         raw_body = await request.body()
-        if len(raw_body) > 1_048_576:  # 1 MB
+        if len(raw_body) > MAX_WEBHOOK_BODY_BYTES:
             raise HTTPException(status_code=413, detail="Request body too large")
         signature = get_signature_header(request.headers)
 

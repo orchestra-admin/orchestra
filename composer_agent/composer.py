@@ -60,9 +60,6 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
     with open(prompt_path, "r") as f:
         system_prompt = f.read()
 
-    build_action_index(project_root)
-    build_integration_index(project_root)
-
     builtin_actions = _read_index(project_root / "musicsheets" / "local_actions" / "builtin_action_index.json")
     builtin_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "builtin_integration_index.json")
     local_actions = _read_index(project_root / "musicsheets" / "local_actions" / "local_action_index.json")
@@ -126,15 +123,18 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
             with open(output_path, "w") as f:
                 f.write(script)
 
-    build_action_index(project_root)
     integrations = build_integration_index(project_root)
     new_keys = sync_env_keys(integrations)
 
     return (True, str(output_path), None, new_keys)
 
 
-def compose(target: str, **kwargs) -> tuple[bool, str | None, str | None]:
+def compose(target: str, **kwargs) -> tuple[bool, str | None, str | None, list[str]]:
     """Route compose commands to the appropriate target (playbook, action, or integration)."""
+    project_root = get_project_root()
+    build_action_index(project_root)
+    build_integration_index(project_root)
+
     if target == "playbook":
         return compose_playbook(kwargs["playbook"])
     elif target == "action":

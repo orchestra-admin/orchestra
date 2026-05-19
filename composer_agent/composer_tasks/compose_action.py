@@ -11,7 +11,6 @@ from composer_agent.composer_tasks.composer_helpers import (
     _write_action,
 )
 from orchestra_core.config import ACTIONS_DIR, get_project_root
-from orchestra_core.index import build_action_index
 from orchestra_core.llm import llm_query
 
 NAME_PATTERN = re.compile(r"^\#\s*(\w[\w_]*)\.py")
@@ -39,9 +38,6 @@ def compose_action(description: str, name: str | None = None) -> tuple[bool, str
     prompt_path = Path(__file__).parent / "compose_action.md"
     with open(prompt_path, "r") as f:
         system_prompt = f.read()
-
-    build_action_index(project_root)
-    build_integration_index(project_root)
 
     builtin_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "builtin_integration_index.json")
     local_action_index = _read_index(project_root / "musicsheets" / "local_actions" / "local_action_index.json")
@@ -130,7 +126,5 @@ def compose_action(description: str, name: str | None = None) -> tuple[bool, str
         _write_action(local_actions_dir, filename, code)
     except ValueError as e:
         return (False, None, str(e), None)
-
-    build_action_index(project_root)
 
     return (True, str(local_actions_dir / filename), None, None)

@@ -137,16 +137,18 @@ def push_dlq_record(redis_client, dlq_key: str, raw_job: str, result: dict) -> N
     """Record a failed job and its result to the dead letter queue in Redis.
 
     Strips the payload from raw_job to avoid storing sensitive data.
+    Removes stdout/stderr from the result dict.
     """
-    safe_job = raw_job
+    safe_job = '{"invalid": true}'
     try:
         job = json.loads(raw_job)
         safe_job = json.dumps({"event_type": job.get("event_type"), "metadata": job.get("metadata")})
     except Exception:
         pass
+    safe_result = {k: v for k, v in result.items() if k not in ("stdout", "stderr")}
     record = {
         "raw_job": safe_job,
-        "result": result,
+        "result": safe_result,
         "failed_at": int(time.time()),
     }
     redis_client.rpush(dlq_key, json.dumps(record))

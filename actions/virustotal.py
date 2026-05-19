@@ -41,10 +41,10 @@ def lookup_ip(ip: str) -> dict:
     )
     
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.load(resp).get("data", {})
-    except urllib.error.URLError as e:
-        raise Exception(f"VT API Error: {e}")
+    except urllib.error.URLError:
+        raise Exception("VirusTotal API request failed")
     
     attributes = data.get("attributes", {})
     stats = attributes.get("last_analysis_stats", {})

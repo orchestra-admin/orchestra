@@ -15,6 +15,7 @@ The first line must be the filename. No other comments above it.
 ## Rules
 - If an action file for the requested service already exists (see "Local Action Files (do not recreate)"), output only `# SKIP: <file>.py already exists` — do not generate duplicate code.
 - The function must be self-contained — do not import from other action files. Import only from integrations (for API/credential access) and Python standard library.
+- Always include an explicit `timeout=` parameter on all HTTP calls (e.g. `urllib.request.urlopen(req, timeout=30)`).
 - Available integrations and their functions are provided in the prompt. Reference them, do not hallucinate.
 - Available secret key names are provided in the prompt — reference integrations that use them.
 - Existing local action files with their function signatures are listed — your function may be appended to a related file but must not import from it.

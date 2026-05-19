@@ -15,6 +15,7 @@ playbook.md into python scripts that use modular actions from the action library
 - The script should prioritise conciseness and high-level readability
 - When writing script - Use the explicitly named action functions wherever possible. Import them from the actions and local_actions module. Do not reimplement logic that exists in the action library.
 - Read secrets using `get_secret(key)` from `actions.secrets_helper`. Use only the exact secret key names listed in the prompt. Do not use `os.environ` for secrets. Do not prompt for secrets. Do not invent or guess secret key names.
+- Always include an explicit `timeout=` parameter on all HTTP calls (e.g. `urllib.request.urlopen(req, timeout=30)`).
 
 
 ## Output Format

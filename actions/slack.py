@@ -24,7 +24,7 @@ def send_message(text: str) -> dict:
     )
 
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             resp.read()
     except urllib.error.URLError as e:
         raise Exception("Slack API request failed")

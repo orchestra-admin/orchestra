@@ -123,9 +123,4 @@ def start_server(port=8080):
     modules = load_server_modules()
     uvicorn = modules["uvicorn"]
     app = create_webhook_app()
-
-    print(f"[*] Orchestra webhook server listening on port {port}")
-    print(f"[*] Project root: {get_project_root()}")
-    print(f"[*] Endpoint: POST /webhook")
-    logger.info("webhook.started", extra={"data": {"port": port}})
     uvicorn.run(app, host="0.0.0.0", port=port)

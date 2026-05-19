@@ -222,11 +222,6 @@ def run_musician() -> int:
     redis_client = get_redis_client()
     redis_client.ping()
 
-    print(f"[*] Orchestra musician started")
-    print(f"[*] Project root: {project_root}")
-    print(f"[*] Config: {get_project_config_path(project_root)}")
-    print(f"[*] Queue: {queue_key}")
-    print(f"[*] DLQ: {dlq_key}")
     logger.info("musician.started", extra={"data": {"project_root": str(project_root), "queue": queue_key, "dlq": dlq_key}})
 
     while True:

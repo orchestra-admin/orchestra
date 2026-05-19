@@ -37,10 +37,6 @@ def run_scheduler() -> None:
     redis_client = get_redis_client()
     redis_client.ping()
 
-    print(f"[*] Orchestra scheduler started")
-    print(f"[*] Project root: {project_root}")
-    print(f"[*] Config: {get_project_config_path(project_root)}")
-    print(f"[*] Queue: {queue_key}")
     logger.info("scheduler.started", extra={"data": {"project_root": str(project_root), "queue": queue_key}})
 
     last_fired: dict[str, str] = {}

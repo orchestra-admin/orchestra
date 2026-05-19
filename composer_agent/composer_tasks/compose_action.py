@@ -3,6 +3,7 @@ from pathlib import Path
 
 from composer_agent.composer_tasks.composer_helpers import (
     MAX_RETRIES,
+    ComposeResult,
     _format_actions,
     _read_index,
     _read_integration_index,
@@ -28,7 +29,7 @@ def _strip_name_line(code: str) -> str:
     return NAME_PATTERN.sub("", code.strip(), count=1).strip() + "\n"
 
 
-def compose_action(description: str, name: str | None = None) -> tuple[bool, str | None, str | None]:
+def compose_action(description: str, name: str | None = None) -> ComposeResult:
     """Generate an action Python module from a natural language description."""
     project_root = get_project_root()
     local_actions_dir = project_root / "musicsheets" / "local_actions"

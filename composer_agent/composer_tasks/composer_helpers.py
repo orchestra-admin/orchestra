@@ -4,6 +4,8 @@ from pathlib import Path
 
 MAX_RETRIES = 3
 
+ComposeResult = tuple[bool, str | None, str | None, list[str]]
+
 
 def _strip_markdown_fences(text: str) -> str:
     text = text.strip()

@@ -5,6 +5,7 @@ from composer_agent.composer_tasks.compose_action import compose_action as _comp
 from composer_agent.composer_tasks.compose_integration import compose_integration as _compose_integration
 from composer_agent.composer_tasks.composer_helpers import (
     MAX_RETRIES,
+    ComposeResult,
     _format_actions,
     _read_index,
     _read_integration_index,
@@ -39,7 +40,7 @@ def _parse_output(raw: str) -> tuple[dict[str, str], str]:
     return (actions, script)
 
 
-def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None, str | None]:
+def compose_playbook(playbook_path, output_path=None) -> ComposeResult:
     """Convert a playbook markdown file into an executable musicsheet script."""
     project_root = get_project_root()
     playbook_path = Path(playbook_path)
@@ -133,7 +134,7 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
     return (True, str(output_path), None, new_keys)
 
 
-def compose(target: str, **kwargs) -> tuple[bool, str | None, str | None, list[str]]:
+def compose(target: str, **kwargs) -> ComposeResult:
     """Route compose commands to the appropriate target (playbook, action, or integration)."""
     if target == "playbook":
         return compose_playbook(kwargs["playbook"])

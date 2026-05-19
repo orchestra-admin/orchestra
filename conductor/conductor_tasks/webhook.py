@@ -88,14 +88,17 @@ def create_webhook_app():
         signature = get_signature_header(request.headers)
 
         if not is_valid_signature(raw_body, signature, secret):
+            logger.warning("webhook.request.rejected", extra={"data": {"reason": "bad_signature", "client_ip": request.client.host if request.client else None}})
             raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
         try:
             payload = json.loads(raw_body.decode("utf-8") or "{}")
         except json.JSONDecodeError as exc:
+            logger.warning("webhook.request.rejected", extra={"data": {"reason": "malformed_json", "client_ip": request.client.host if request.client else None}})
             raise HTTPException(status_code=400, detail="Request body must be valid JSON") from exc
 
         if not isinstance(payload, dict):
+            logger.warning("webhook.request.rejected", extra={"data": {"reason": "malformed_json", "client_ip": request.client.host if request.client else None}})
             raise HTTPException(status_code=400, detail="Request body must be a JSON object")
 
         try:

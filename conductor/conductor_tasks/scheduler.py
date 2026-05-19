@@ -55,10 +55,12 @@ def run_scheduler() -> None:
                 continue
 
             if last_fired.get(event_type) == current_minute:
+                logger.info("scheduler.cron.skipped_duplicate", extra={"data": {"event_type": event_type}})
                 continue
             last_fired[event_type] = current_minute
 
             if redis_client.sismember(DEACTIVATED_SET_KEY, event_type):
+                logger.info("scheduler.cron.skipped_deactivated", extra={"data": {"event_type": event_type}})
                 continue
 
             payload = {"event_type": event_type}

@@ -62,7 +62,11 @@ def run_scheduler() -> None:
                 continue
 
             payload = {"event_type": event_type}
-            job = build_queue_job(payload, source="schedule")
+            try:
+                job = build_queue_job(payload, source="schedule")
+            except ValueError:
+                logger.warning("scheduler.cron.skipped_invalid", extra={"data": {"event_type": event_type}})
+                continue
             enqueue_job(redis_client, queue_key, job)
             logger.info("scheduler.cron.fired", extra={"data": {"event_type": event_type, "cron": cron_expr}})
 

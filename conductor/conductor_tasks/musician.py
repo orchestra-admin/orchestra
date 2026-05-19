@@ -34,6 +34,8 @@ def parse_job(raw_job: str) -> dict:
 
     if not isinstance(event_type, str) or not event_type:
         raise ValueError("Job must include a non-empty string field 'event_type'.")
+    if "/" in event_type or "\\" in event_type or ".." in event_type:
+        raise ValueError(f"Job event_type '{event_type}' must not contain path separators.")
     if not isinstance(payload, dict):
         raise ValueError("Job must include an object field 'payload'.")
     if not isinstance(metadata, dict):
@@ -50,6 +52,8 @@ def build_queue_job(payload: dict, source: str = "webhook", metadata: dict | Non
     event_type = payload.get("event_type")
     if not isinstance(event_type, str) or not event_type:
         raise ValueError("Payload must include a non-empty string field 'event_type'.")
+    if "/" in event_type or "\\" in event_type or ".." in event_type:
+        raise ValueError(f"Payload event_type '{event_type}' must not contain path separators.")
 
     job_metadata = {
         "source": source,
@@ -72,10 +76,12 @@ def enqueue_job(redis_client, queue_key: str, job: dict) -> None:
 
 def resolve_script_path(project_root: Path, event_type: str) -> Path:
     """Resolve the musicsheet script file path for a given event type."""
-    script_path = (project_root / "musicsheets" / f"{event_type}.py").resolve()
     musicsheets_dir = (project_root / "musicsheets").resolve()
-    if not str(script_path).startswith(str(musicsheets_dir)):
-        raise ValueError(f"Invalid event_type '{event_type}': path escapes musicsheets/ directory")
+    script_path = (musicsheets_dir / f"{event_type}.py").resolve()
+    try:
+        script_path.relative_to(musicsheets_dir)
+    except ValueError:
+        raise ValueError(f"Invalid event_type '{event_type}': path escapes musicsheets/ directory") from None
     return script_path
 
 def execute_job(
@@ -163,7 +169,13 @@ def process_raw_job(
         logger.info("musician.job.skipped_deactivated", extra={"data": {"event_type": job["event_type"]}})
         return result
 
-    result = execute_job(job, project_root=project_root, timeout_seconds=timeout_seconds)
+    try:
+        result = execute_job(job, project_root=project_root, timeout_seconds=timeout_seconds)
+    except ValueError as exc:
+        result = {"status": "invalid", "error": str(exc)}
+        push_dlq_record(redis_client, dlq_key, raw_job, result)
+        logger.error("musician.job.invalid", extra={"data": {"error": str(exc)}})
+        return result
     status = result["status"]
 
     if status == "success":

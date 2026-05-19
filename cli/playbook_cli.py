@@ -82,7 +82,11 @@ def run_playbook(event_type: str, payload: dict | None = None) -> None:
     payload = payload or {}
     payload["event_type"] = event_type
 
-    job = build_queue_job(payload, source="manual")
+    try:
+        job = build_queue_job(payload, source="manual")
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return
 
     print(f"[*] Running playbook '{event_type}' manually...")
     result = execute_job(job)

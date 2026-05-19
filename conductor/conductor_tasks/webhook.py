@@ -77,6 +77,10 @@ def create_webhook_app():
 
     @app.post("/webhook")
     async def receive_webhook(request: Request):
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > MAX_WEBHOOK_BODY_BYTES:
+            raise HTTPException(status_code=413, detail="Request body too large")
+
         raw_body = await request.body()
         if len(raw_body) > MAX_WEBHOOK_BODY_BYTES:
             raise HTTPException(status_code=413, detail="Request body too large")

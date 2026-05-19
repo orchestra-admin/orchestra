@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from orchestra_core.config import get_project_root
-from orchestra_core.index import get_actions_index
+from orchestra_core.index import get_action_indexes
 from orchestra_core.llm import llm_query
 
 
@@ -42,7 +42,7 @@ def review_playbook(playbook_path: str) -> str:
     with open(playbook_file, "r") as f:
         playbook_text = f.read()
 
-    all_actions = get_actions_index(project_root)
+    all_actions = get_action_indexes(project_root)
 
     actions_summary = ""
     if all_actions:

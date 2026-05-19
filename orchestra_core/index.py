@@ -77,13 +77,25 @@ def _build_func_index_from_dir(directory: Path, module_prefix: str, output_json_
     return grouped
 
 
-def _read_index_json(path: Path) -> dict:
-    """Read a grouped index JSON file from disk. Returns empty dict if missing or invalid."""
-    if not path.exists():
-        return {}
-    with open(path, "r") as f:
-        data = json.load(f)
-    return data if isinstance(data, dict) else {}
+def _get_builtin_indexes() -> dict:
+    """Read built-in action and integration index JSON files from disk.
+
+    Returns a dict with keys 'builtin_actions' and 'builtin_integrations'.
+    Each value is the grouped dict from the corresponding JSON file,
+    or an empty dict if the file is missing or invalid.
+    """
+    builtin = {}
+    for key, path in [
+        ("builtin_actions", ACTIONS_DIR / "action_index.json"),
+        ("builtin_integrations", ACTIONS_DIR / "integrations" / "integration_index.json"),
+    ]:
+        if path.exists():
+            with open(path, "r") as f:
+                data = json.load(f)
+            builtin[key] = data if isinstance(data, dict) else {}
+        else:
+            builtin[key] = {}
+    return builtin
 
 
 def build_builtin_indexes() -> None:
@@ -118,15 +130,17 @@ def build_local_integration_index(project_root: Path) -> dict:
     )
 
 
-def get_actions_index(project_root: Path) -> dict:
+def get_action_indexes(project_root: Path) -> dict:
     """Merge built-in and local action indexes. Reads built-in from disk, rebuilds local."""
-    actions = _read_index_json(ACTIONS_DIR / "action_index.json")
+    builtin = _get_builtin_indexes()
+    actions = dict(builtin["builtin_actions"])
     actions.update(build_local_action_index(project_root))
     return actions
 
 
-def get_integrations_index(project_root: Path) -> dict:
+def get_integration_indexes(project_root: Path) -> dict:
     """Merge built-in and local integration indexes. Reads built-in from disk, rebuilds local."""
-    integrations = _read_index_json(ACTIONS_DIR / "integrations" / "integration_index.json")
+    builtin = _get_builtin_indexes()
+    integrations = dict(builtin["builtin_integrations"])
     integrations.update(build_local_integration_index(project_root))
     return integrations

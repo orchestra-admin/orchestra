@@ -11,7 +11,7 @@ from composer_agent.composer_tasks.composer_helpers import (
     _write_action,
 )
 from orchestra_core.config import ACTIONS_DIR, get_project_root
-from orchestra_core.index import build_integration_index
+from orchestra_core.index import build_action_index, build_integration_index
 from orchestra_core.secrets import sync_env_keys
 from orchestra_core.llm import llm_query
 
@@ -36,6 +36,9 @@ def compose_integration(description: str, name: str | None = None) -> tuple[bool
 
     if not local_integrations_dir.parent.exists():
         return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.", None)
+
+    build_action_index(project_root)
+    build_integration_index(project_root)
 
     prompt_path = Path(__file__).parent / "compose_integration.md"
     with open(prompt_path, "r") as f:

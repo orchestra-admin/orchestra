@@ -48,6 +48,9 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
     if not musicsheets_dir.is_dir():
         return (False, None, "musicsheets/ not found. Run this command from an initialized Orchestra project.")
 
+    build_action_index(project_root)
+    build_integration_index(project_root)
+
     if not output_path:
         output_path = musicsheets_dir / f"{playbook_path.stem}.py"
     else:
@@ -132,10 +135,6 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
 
 def compose(target: str, **kwargs) -> tuple[bool, str | None, str | None, list[str]]:
     """Route compose commands to the appropriate target (playbook, action, or integration)."""
-    project_root = get_project_root()
-    build_action_index(project_root)
-    build_integration_index(project_root)
-
     if target == "playbook":
         return compose_playbook(kwargs["playbook"])
     elif target == "action":

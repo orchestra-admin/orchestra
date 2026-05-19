@@ -62,8 +62,8 @@ def compose_playbook(playbook_path, output_path=None) -> tuple[bool, str | None,
 
     builtin_actions = _read_index(project_root / "musicsheets" / "local_actions" / "builtin_action_index.json")
     builtin_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "builtin_integration_index.json")
-    local_actions = _read_index(project_root / "musicsheets" / "local_actions" / "action_index.json")
-    local_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "integration_index.json")
+    local_actions = _read_index(project_root / "musicsheets" / "local_actions" / "local_action_index.json")
+    local_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "local_integration_index.json")
 
     actions_summary = _format_actions({**builtin_actions, **local_actions})
 

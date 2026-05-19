@@ -41,8 +41,8 @@ def compose_action(description: str, name: str | None = None) -> tuple[bool, str
         system_prompt = f.read()
 
     builtin_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "builtin_integration_index.json")
-    local_action_index = _read_index(project_root / "musicsheets" / "local_actions" / "action_index.json")
-    local_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "integration_index.json")
+    local_action_index = _read_index(project_root / "musicsheets" / "local_actions" / "local_action_index.json")
+    local_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "local_integration_index.json")
 
     reference_example = ""
     reference_path = ACTIONS_DIR / "slack.py"

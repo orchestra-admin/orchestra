@@ -72,7 +72,11 @@ def enqueue_job(redis_client, queue_key: str, job: dict) -> None:
 
 def resolve_script_path(project_root: Path, event_type: str) -> Path:
     """Resolve the musicsheet script file path for a given event type."""
-    return project_root / "musicsheets" / f"{event_type}.py"
+    script_path = (project_root / "musicsheets" / f"{event_type}.py").resolve()
+    musicsheets_dir = (project_root / "musicsheets").resolve()
+    if not str(script_path).startswith(str(musicsheets_dir)):
+        raise ValueError(f"Invalid event_type '{event_type}': path escapes musicsheets/ directory")
+    return script_path
 
 def execute_job(
     job: dict,

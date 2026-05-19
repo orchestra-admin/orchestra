@@ -113,8 +113,8 @@ def create_webhook_app():
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         enqueue_job(redis_client, queue_key, job)
-        logger.info("webhook.request.accepted", extra={"data": {"event_type": job["event_type"], "client_ip": request.client.host if request.client else None}})
-        return {"queued": True, "event_type": job["event_type"]}
+        logger.info("webhook.request.accepted", extra={"data": {"job_id": job.get("job_id"), "event_type": job["event_type"], "client_ip": request.client.host if request.client else None}})
+        return {"queued": True, "job_id": job.get("job_id"), "event_type": job["event_type"]}
 
     return app
 

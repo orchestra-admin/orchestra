@@ -2,6 +2,7 @@ import json
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 from orchestra_core.config import (
@@ -64,6 +65,7 @@ def build_queue_job(payload: dict, source: str = "webhook", metadata: dict | Non
         job_metadata.update(metadata)
 
     return {
+        "job_id": uuid.uuid4().hex,
         "event_type": event_type,
         "payload": payload,
         "metadata": job_metadata,
@@ -141,9 +143,11 @@ def push_dlq_record(redis_client, dlq_key: str, raw_job: str, result: dict) -> N
     Removes stdout/stderr from the result dict.
     """
     safe_job = '{"invalid": true}'
+    job_id = None
     try:
         job = json.loads(raw_job)
-        safe_job = json.dumps({"event_type": job.get("event_type"), "metadata": job.get("metadata")})
+        job_id = job.get("job_id")
+        safe_job = json.dumps({"job_id": job_id, "event_type": job.get("event_type"), "metadata": job.get("metadata")})
     except Exception:
         pass
     safe_result = {k: v for k, v in result.items() if k not in ("stdout", "stderr")}
@@ -152,6 +156,8 @@ def push_dlq_record(redis_client, dlq_key: str, raw_job: str, result: dict) -> N
         "result": safe_result,
         "failed_at": int(time.time()),
     }
+    if job_id:
+        record["job_id"] = job_id
     redis_client.rpush(dlq_key, json.dumps(record))
 
 def process_raw_job(
@@ -180,7 +186,7 @@ def process_raw_job(
             "failure_reason": "playbook_deactivated",
         }
         push_dlq_record(redis_client, dlq_key, raw_job, result)
-        logger.info("musician.job.skipped_deactivated", extra={"data": {"event_type": job["event_type"]}})
+        logger.info("musician.job.skipped_deactivated", extra={"data": {"job_id": job.get("job_id"), "event_type": job["event_type"]}})
         return result
 
     try:
@@ -188,12 +194,13 @@ def process_raw_job(
     except ValueError as exc:
         result = {"status": "invalid", "error": str(exc)}
         push_dlq_record(redis_client, dlq_key, raw_job, result)
-        logger.error("musician.job.invalid", extra={"data": {"error": str(exc)}})
+        logger.error("musician.job.invalid", extra={"data": {"job_id": job.get("job_id"), "error": str(exc)}})
         return result
     status = result["status"]
 
     if status == "success":
         logger.info("musician.job.completed", extra={"data": {
+            "job_id": job.get("job_id"),
             "event_type": job["event_type"],
             "source": job.get("metadata", {}).get("source"),
             "returncode": result.get("returncode"),
@@ -201,11 +208,11 @@ def process_raw_job(
         return result
 
     if status == "missing_script":
-        logger.warning("musician.job.skipped_missing", extra={"data": {"event_type": job["event_type"]}})
+        logger.warning("musician.job.skipped_missing", extra={"data": {"job_id": job.get("job_id"), "event_type": job["event_type"]}})
         return result
 
     push_dlq_record(redis_client, dlq_key, raw_job, result)
-    logger.warning("musician.job.dlq", extra={"data": {"event_type": job["event_type"], "status": status}})
+    logger.warning("musician.job.dlq", extra={"data": {"job_id": job.get("job_id"), "event_type": job["event_type"], "status": status}})
     return result
 
 def run_musician() -> int:

@@ -4,7 +4,7 @@
 This script receives an IP address via webhook payload, enriches it by querying VirusTotal, and sends the result to a Slack channel.
 
 ## Inputs
-- Webhook JSON payload on stdin: `{"event_type": "ip_enrichment3", "ip": "1.1.1.1"}`
+- Webhook JSON payload on stdin: `{"event_type": "ip_enrichment", "ip": "1.1.1.1"}`
 
 ## Invocation
 This playbook is triggered by a webhook `POST` to `/webhook`.

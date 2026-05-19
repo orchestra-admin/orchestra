@@ -51,7 +51,7 @@ def init_project() -> None:
     print("[*] Next steps:")
     print("  - Fill in .env with your real secrets.")
     print("  - Review .local_config/orchestra.json and adjust Redis settings if needed.")
-    print("  - Run orchestra compose <playbook.md> from this directory.")
+    print("  - Run orchestra compose playbook <playbook.md> from this directory.")
 
     if not _is_docker_installed():
         print("\n[!] Docker is not installed. Orchestra requires Docker to run the built-in Automation Engine.")

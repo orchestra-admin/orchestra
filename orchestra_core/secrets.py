@@ -24,6 +24,8 @@ def _load_env_file(path: Path) -> dict:
             key, _, value = line.partition("=")
             key = key.strip()
             value = value.strip().strip("'\"")
+            if value.startswith("<set_in_"):
+                continue
             if key:
                 env_vars[key] = value
 
@@ -47,7 +49,14 @@ def _get_secret_env(key: str) -> str:
 
     env_vars = _load_env_file(env_file)
     if key in env_vars:
-        return env_vars[key]
+        value = env_vars[key]
+        if value.startswith("<set_in_"):
+            raise KeyError(
+                f"Secret '{key}' is set to a placeholder '{value}'. "
+                f"The value now lives in the configured secrets backend. "
+                f"Run 'orchestra secrets list' to verify."
+            )
+        return value
 
     raise KeyError(
         f"Secret '{key}' not found in environment or .env file. "

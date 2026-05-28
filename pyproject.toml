@@ -30,7 +30,7 @@ py-modules = ["orchestra"]
 include = ["orchestra_core*", "actions*", "composer_agent*", "conductor*", "cli*"]
 
 [tool.setuptools.package-data]
-actions = []
+actions = ["action_index.json", "integrations/integration_index.json"]
 composer_agent = ["composer.md", "composer_tasks/compose_action.md", "composer_tasks/compose_integration.md", "composer_tasks/review_prompt.md"]
 orchestra_core = [
   "init_assets/.local_config/orchestra.json",

@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from pathlib import Path
 
 FRAMEWORK_ROOT = Path(__file__).resolve().parent.parent
@@ -11,6 +12,7 @@ DEACTIVATED_SET_KEY = "playbooks:deactivated"
 DEFAULT_TIMEOUT_SECONDS = 300
 DEFAULT_BLOCK_SECONDS = 5
 MAX_WEBHOOK_BODY_BYTES = 1_048_576  # 1 MB
+EVENT_TYPE_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 DEFAULT_REDIS_CONFIG = {
     "host": "127.0.0.1",
     "port": 6379,

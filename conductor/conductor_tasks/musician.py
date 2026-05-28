@@ -9,6 +9,7 @@ from orchestra_core.config import (
     DEFAULT_DLQ_KEY,
     DEFAULT_TIMEOUT_SECONDS,
     DEACTIVATED_SET_KEY,
+    EVENT_TYPE_PATTERN,
     get_project_root,
     get_project_config_path,
     load_musician_config,
@@ -36,8 +37,6 @@ def parse_job(raw_job: str) -> dict:
 
     if not isinstance(event_type, str) or not event_type:
         raise ValueError("Job must include a non-empty string field 'event_type'.")
-    if "/" in event_type or "\\" in event_type or ".." in event_type:
-        raise ValueError(f"Job event_type '{event_type}' must not contain path separators.")
     if not isinstance(payload, dict):
         raise ValueError("Job must include an object field 'payload'.")
     if not isinstance(metadata, dict):
@@ -54,8 +53,11 @@ def build_queue_job(payload: dict, source: str = "webhook", metadata: dict | Non
     event_type = payload.get("event_type")
     if not isinstance(event_type, str) or not event_type:
         raise ValueError("Payload must include a non-empty string field 'event_type'.")
-    if "/" in event_type or "\\" in event_type or ".." in event_type:
-        raise ValueError(f"Payload event_type '{event_type}' must not contain path separators.")
+    if not EVENT_TYPE_PATTERN.match(event_type):
+        raise ValueError(
+            f"Payload event_type '{event_type}' contains invalid characters. "
+            f"Only alphanumeric characters, underscores, hyphens, and dots are allowed."
+        )
 
     job_metadata = {
         "source": source,

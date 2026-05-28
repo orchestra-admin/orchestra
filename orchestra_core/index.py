@@ -1,8 +1,6 @@
-import importlib
-import inspect
+import ast
 import json
 import re
-import sys
 from pathlib import Path
 import logging
 
@@ -26,6 +24,62 @@ def _extract_secret_keys(filepath: Path) -> list[str]:
     return sorted(keys)
 
 
+def _build_signature_from_ast(args: ast.arguments, returns: ast.expr | None) -> str:
+    """Build a signature string from an AST arguments node."""
+    parts = []
+
+    num_args = len(args.args)
+    num_defaults = len(args.defaults)
+    default_offset = num_args - num_defaults
+
+    for i, arg in enumerate(args.args):
+        part = arg.arg
+        if arg.annotation:
+            part += f": {ast.unparse(arg.annotation)}"
+        default_idx = i - default_offset
+        if default_idx >= 0:
+            part += f" = {ast.unparse(args.defaults[default_idx])}"
+        parts.append(part)
+
+    if args.vararg:
+        part = f"*{args.vararg.arg}"
+        if args.vararg.annotation:
+            part += f": {ast.unparse(args.vararg.annotation)}"
+        parts.append(part)
+    elif args.kwonlyargs:
+        parts.append("*")
+
+    for i, arg in enumerate(args.kwonlyargs):
+        part = arg.arg
+        if arg.annotation:
+            part += f": {ast.unparse(arg.annotation)}"
+        if i < len(args.kw_defaults) and args.kw_defaults[i] is not None:
+            part += f" = {ast.unparse(args.kw_defaults[i])}"
+        parts.append(part)
+
+    if args.kwarg:
+        part = f"**{args.kwarg.arg}"
+        if args.kwarg.annotation:
+            part += f": {ast.unparse(args.kwarg.annotation)}"
+        parts.append(part)
+
+    sig = f"({', '.join(parts)})"
+    if returns:
+        sig += f" -> {ast.unparse(returns)}"
+    return sig
+
+
+def _get_docstring_from_ast(func_node: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
+    """Extract the docstring from a function's AST node."""
+    if not func_node.body:
+        return ""
+    first_stmt = func_node.body[0]
+    if isinstance(first_stmt, ast.Expr) and isinstance(first_stmt.value, ast.Constant):
+        if isinstance(first_stmt.value.value, str):
+            return first_stmt.value.value
+    return ""
+
+
 def _build_func_index_from_dir(directory: Path, module_prefix: str, output_json_path: Path) -> dict:
     """Scan .py files in a directory and return a grouped dict index with module name as key.
 
@@ -46,26 +100,31 @@ def _build_func_index_from_dir(directory: Path, module_prefix: str, output_json_
 
         module_name = f"{module_prefix}.{file.stem}"
         try:
-            module = importlib.import_module(module_name)
+            source = file.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=str(file))
         except Exception as e:
-            logger.warning("index.import_failed", extra={"data": {"module": module_name, "error": str(e)}})
+            logger.warning("index.parse_failed", extra={"data": {"module": module_name, "error": str(e)}})
             continue
 
         functions = []
-        for name, obj in inspect.getmembers(module, inspect.isfunction):
-            if not name.startswith("_") and getattr(obj, "__module__", "") == module.__name__:
-                sig = str(inspect.signature(obj))
-                doc = inspect.getdoc(obj)
+        for node in ast.iter_child_nodes(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if node.name.startswith("_"):
+                continue
 
-                description = ""
-                if doc:
-                    description = doc.strip().split('\n\n')[0].replace('\n', ' ').strip()
+            sig = _build_signature_from_ast(node.args, node.returns)
+            doc = _get_docstring_from_ast(node)
 
-                functions.append({
-                    "function": name,
-                    "signature": sig,
-                    "description": description,
-                })
+            description = ""
+            if doc:
+                description = doc.strip().split('\n\n')[0].replace('\n', ' ').strip()
+
+            functions.append({
+                "function": node.name,
+                "signature": sig,
+                "description": description,
+            })
 
         if functions:
             grouped[module_name] = {"secrets": secret_keys, "functions": functions}
@@ -79,10 +138,6 @@ def _build_func_index_from_dir(directory: Path, module_prefix: str, output_json_
 
 def build_action_index(project_root: Path) -> dict:
     """Build and merge built-in + local action indexes into a single grouped dict."""
-    musicsheets_path = str(project_root / "musicsheets")
-    if musicsheets_path not in sys.path:
-        sys.path.insert(0, musicsheets_path)
-
     local_base = project_root / "musicsheets" / "local_actions"
 
     actions = _build_func_index_from_dir(ACTIONS_DIR, "actions", local_base / "builtin_action_index.json")
@@ -92,10 +147,6 @@ def build_action_index(project_root: Path) -> dict:
 
 def build_integration_index(project_root: Path) -> dict:
     """Build and merge built-in + local integration indexes into a single grouped dict."""
-    musicsheets_path = str(project_root / "musicsheets")
-    if musicsheets_path not in sys.path:
-        sys.path.insert(0, musicsheets_path)
-
     local_base = project_root / "musicsheets" / "local_actions" / "local_integrations"
 
     integrations = _build_func_index_from_dir(ACTIONS_DIR / "integrations", "actions.integrations", local_base / "builtin_integration_index.json")

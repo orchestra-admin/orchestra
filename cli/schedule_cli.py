@@ -6,7 +6,8 @@ from croniter import croniter
 from orchestra_core.config import get_project_config_path, get_project_root
 
 
-def _load_config():
+def _load_config() -> dict:
+    """Load the project configuration from orchestra.json."""
     config_path = get_project_config_path()
     if not config_path.exists():
         return {}
@@ -15,7 +16,8 @@ def _load_config():
         return json.load(f)
 
 
-def _save_config(data: dict):
+def _save_config(data: dict) -> None:
+    """Save the project configuration to orchestra.json."""
     config_path = get_project_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -24,7 +26,7 @@ def _save_config(data: dict):
         f.write("\n")
 
 
-def list_schedules():
+def list_schedules() -> None:
     """Print all configured cron schedules from the project config."""
     data = _load_config()
     schedules = data.get("schedules", {})
@@ -43,7 +45,7 @@ def list_schedules():
     print()
 
 
-def add_schedule(event_type: str, cron_expr: str):
+def add_schedule(event_type: str, cron_expr: str) -> None:
     """Add or update a cron schedule for the given event type."""
     if not croniter.is_valid(cron_expr):
         print(f"Error: Invalid cron expression '{cron_expr}'. Must be a valid 5-field cron expression.", file=sys.stderr)
@@ -57,7 +59,7 @@ def add_schedule(event_type: str, cron_expr: str):
     print(f"[+] Schedule set: '{event_type}' → '{cron_expr}'")
 
 
-def remove_schedule(event_type: str):
+def remove_schedule(event_type: str) -> None:
     """Remove the cron schedule for the given event type."""
     data = _load_config()
     schedules = data.get("schedules", {})

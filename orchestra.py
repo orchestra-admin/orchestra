@@ -13,7 +13,8 @@ from cli.scheduler_cli import run_scheduler
 from cli.secrets_cli import push_secrets, list_secrets
 from orchestra_core.logging import setup_logging
 
-def main():
+def main() -> None:
+    """Entry point for the Orchestra SOAR CLI."""
     setup_logging()
     parser = argparse.ArgumentParser(description="Orchestra SOAR CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)

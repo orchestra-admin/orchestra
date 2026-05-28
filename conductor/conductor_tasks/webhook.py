@@ -119,7 +119,7 @@ def create_webhook_app():
     return app
 
 
-def start_server(port=8080):
+def start_server(port: int = 8080) -> None:
     """Start the Orchestra webhook server on the specified port."""
     setup_logging()
 

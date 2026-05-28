@@ -11,7 +11,7 @@ from conductor.conductor_tasks.musician import build_queue_job, execute_job
 from composer_agent.composer_tasks.review import review_playbook as _review_playbook
 
 
-def is_playbook_deactivated(redis_client, event_type: str) -> bool:
+def is_playbook_deactivated(redis_client: "redis.Redis", event_type: str) -> bool:
     """Check whether a playbook is currently deactivated in Redis."""
     return redis_client.sismember(DEACTIVATED_SET_KEY, event_type)
 
@@ -45,7 +45,7 @@ def activate_playbook(event_type: str) -> None:
     print(f"[+] Playbook '{event_type}' has been activated.")
 
 
-def print_playbooks():
+def print_playbooks() -> None:
     """Print all available playbooks from the playbooks directory with their status."""
     project_root = get_project_root()
     playbooks_dir = project_root / "playbooks"

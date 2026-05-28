@@ -40,11 +40,11 @@ def _print_index(title: str, items: list | dict) -> None:
         print()
 
 
-def print_actions():
+def print_actions() -> None:
     """Print all available actions from built-in and local action indices."""
     _print_index("Available Orchestra Actions", build_action_index(get_project_root()))
 
 
-def print_integrations():
+def print_integrations() -> None:
     """Print all available integrations from built-in and local integration indices."""
     _print_index("Available Orchestra Integrations", build_integration_index(get_project_root()))

@@ -1,9 +1,10 @@
 import re
 from pathlib import Path
+import logging
 
 from composer_agent.composer_tasks.composer_helpers import (
     MAX_RETRIES,
-    ComposeResult,
+    COMPOSE_RESULT,
     _format_actions,
     _read_index,
     _read_integration_index,
@@ -15,6 +16,8 @@ from orchestra_core.config import ACTIONS_DIR, get_project_root
 from orchestra_core.index import build_action_index, build_integration_index
 from orchestra_core.secrets import sync_env_keys
 from orchestra_core.llm import llm_query
+
+logger = logging.getLogger(__name__)
 
 NAME_PATTERN = re.compile(r"^\#\s*(\w[\w_]*)\.py")
 
@@ -30,7 +33,7 @@ def _strip_name_line(code: str) -> str:
     return NAME_PATTERN.sub("", code.strip(), count=1).strip() + "\n"
 
 
-def compose_integration(description: str, name: str | None = None) -> ComposeResult:
+def compose_integration(description: str, name: str | None = None) -> COMPOSE_RESULT:
     """Generate an integration Python module from a natural language description."""
     project_root = get_project_root()
     local_integrations_dir = project_root / "musicsheets" / "local_actions" / "local_integrations"
@@ -86,18 +89,22 @@ def compose_integration(description: str, name: str | None = None) -> ComposeRes
     )
 
     code = None
+    validation_error = None
     for attempt in range(1, MAX_RETRIES + 1):
         code = llm_query(system_prompt, user_message)
         code = _strip_markdown_fences(code)
 
-        error = _validate_python(code, "integration")
-        if error is None:
+        validation_error = _validate_python(code, "integration")
+        if validation_error is None:
             break
 
+        logger.warning("compose.llm.retry", extra={"data": {"attempt": attempt, "max_retries": MAX_RETRIES, "error": validation_error}})
         if attempt < MAX_RETRIES:
-            user_message = retry_prompt + f"Error: {error}\n\n" + user_message
-        else:
-            pass
+            user_message = retry_prompt + f"Error: {validation_error}\n\n" + user_message
+
+    if validation_error is not None:
+        logger.error("compose.llm.failed_validation", extra={"data": {"error": validation_error}})
+        return (False, None, f"Generated code failed validation after {MAX_RETRIES} attempts: {validation_error}", [])
 
     if code.strip().startswith("# SKIP"):
         skip_msg = code.strip().splitlines()[0]

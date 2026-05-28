@@ -1,11 +1,12 @@
 import re
 from pathlib import Path
+import logging
 
 from composer_agent.composer_tasks.compose_action import compose_action as _compose_action
 from composer_agent.composer_tasks.compose_integration import compose_integration as _compose_integration
 from composer_agent.composer_tasks.composer_helpers import (
     MAX_RETRIES,
-    ComposeResult,
+    COMPOSE_RESULT,
     _format_actions,
     _read_index,
     _read_integration_index,
@@ -17,6 +18,8 @@ from orchestra_core.llm import llm_query
 from orchestra_core.config import ACTIONS_DIR, get_project_root
 from orchestra_core.index import build_action_index, build_integration_index
 from orchestra_core.secrets import sync_env_keys
+
+logger = logging.getLogger(__name__)
 
 ACTIONS_MARKER = re.compile(r"###ACTIONS (.+?)###(.*?)###END ACTIONS###", re.DOTALL)
 SCRIPT_SPLIT = re.compile(r"###SCRIPT###", re.DOTALL)
@@ -40,7 +43,7 @@ def _parse_output(raw: str) -> tuple[dict[str, str], str]:
     return (actions, script)
 
 
-def compose_playbook(playbook_path, output_path=None) -> ComposeResult:
+def compose_playbook(playbook_path: str | Path, output_path: str | Path | None = None) -> COMPOSE_RESULT:
     """Convert a playbook markdown file into an executable musicsheet script."""
     project_root = get_project_root()
     playbook_path = Path(playbook_path)
@@ -97,6 +100,7 @@ def compose_playbook(playbook_path, output_path=None) -> ComposeResult:
 
     local_actions_dir = project_root / "musicsheets" / "local_actions"
 
+    validation_error = None
     for attempt in range(1, MAX_RETRIES + 1):
         raw_output = llm_query(system_prompt, user_message)
         raw_output = _strip_markdown_fences(raw_output)
@@ -121,11 +125,16 @@ def compose_playbook(playbook_path, output_path=None) -> ComposeResult:
                 f.write(script)
             break
 
+        logger.warning("compose.llm.retry", extra={"data": {"attempt": attempt, "max_retries": MAX_RETRIES, "error": validation_error}})
         if attempt < MAX_RETRIES:
             user_message = retry_prompt + f"Error: {validation_error}\n\n" + user_message
-        else:
-            with open(output_path, "w") as f:
-                f.write(script)
+
+    if validation_error is not None:
+        logger.error("compose.llm.failed_validation", extra={"data": {"error": validation_error, "output_path": str(output_path)}})
+        draft_path = output_path.with_suffix(".draft.py")
+        with open(draft_path, "w") as f:
+            f.write(script)
+        return (False, None, f"Generated code failed validation after {MAX_RETRIES} attempts: {validation_error}. Draft written to {draft_path}", [])
 
     build_action_index(project_root)
     integrations = build_integration_index(project_root)
@@ -134,7 +143,7 @@ def compose_playbook(playbook_path, output_path=None) -> ComposeResult:
     return (True, str(output_path), None, new_keys)
 
 
-def compose(target: str, **kwargs) -> ComposeResult:
+def compose(target: str, **kwargs) -> COMPOSE_RESULT:
     """Route compose commands to the appropriate target (playbook, action, or integration)."""
     if target == "playbook":
         return compose_playbook(kwargs["playbook"])

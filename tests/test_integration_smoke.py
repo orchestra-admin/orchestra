@@ -1,5 +1,4 @@
 import subprocess
-import sys
 
 import pytest
 
@@ -27,9 +26,9 @@ def test_import_smoke():
 
 @pytest.mark.integration
 def test_cli_help_smoke():
-    """Verify that orchestra.py --help exits successfully."""
+    """Verify that orchestra --help exits successfully."""
     result = subprocess.run(
-        [sys.executable, "orchestra.py", "--help"],
+        ["orchestra", "--help"],
         capture_output=True,
         text=True,
         timeout=10,
@@ -43,9 +42,9 @@ def test_cli_help_smoke():
 
 @pytest.mark.integration
 def test_cli_compose_help_smoke():
-    """Verify that orchestra.py compose --help exits successfully."""
+    """Verify that orchestra compose --help exits successfully."""
     result = subprocess.run(
-        [sys.executable, "orchestra.py", "compose", "--help"],
+        ["orchestra", "compose", "--help"],
         capture_output=True,
         text=True,
         timeout=10,
@@ -59,9 +58,9 @@ def test_cli_compose_help_smoke():
 
 @pytest.mark.integration
 def test_cli_playbook_help_smoke():
-    """Verify that orchestra.py playbook --help exits successfully."""
+    """Verify that orchestra playbook --help exits successfully."""
     result = subprocess.run(
-        [sys.executable, "orchestra.py", "playbook", "--help"],
+        ["orchestra", "playbook", "--help"],
         capture_output=True,
         text=True,
         timeout=10,

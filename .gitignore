@@ -11,6 +11,8 @@ build/
 logs/
 AWS_DEPLOYMENT.md
 .tmp/
+.pytest_cache/
+.ruff_cache/
 
 # User workspace artifacts (created by orchestra init or commands)
 musicsheets/

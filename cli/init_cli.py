@@ -1,7 +1,6 @@
 import secrets
 import shutil
 import subprocess
-from pathlib import Path
 
 from orchestra_core.config import INIT_ASSETS_DIR, get_project_root
 from orchestra_core.index import build_action_index, build_integration_index
@@ -33,7 +32,9 @@ def init_project() -> None:
 
     if env_example.exists() and not env_file.exists():
         content = env_example.read_text()
-        content = content.replace("WEBHOOK_SECRET=\n", f"WEBHOOK_SECRET={secrets.token_hex(32)}\n", 1)
+        content = content.replace(
+            "WEBHOOK_SECRET=\n", f"WEBHOOK_SECRET={secrets.token_hex(32)}\n", 1
+        )
         env_file.write_text(content)
 
     print()
@@ -50,11 +51,15 @@ def init_project() -> None:
 
     print("[*] Next steps:")
     print("  - Fill in .env with your real secrets.")
-    print("  - Review .local_config/orchestra.json and adjust Redis settings if needed.")
+    print(
+        "  - Review .local_config/orchestra.json and adjust Redis settings if needed."
+    )
     print("  - Run orchestra compose playbook <playbook.md> from this directory.")
 
     if not _is_docker_installed():
-        print("\n[!] Docker is not installed. Orchestra requires Docker to run the built-in Automation Engine.")
+        print(
+            "\n[!] Docker is not installed. Orchestra requires Docker to run the built-in Automation Engine."
+        )
         print("    macOS: Install Docker Desktop")
         print("    Linux: Install Docker Engine")
         print("    Then run: docker compose up -d")

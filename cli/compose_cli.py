@@ -19,7 +19,9 @@ def compose_playbook(playbook_path: str) -> None:
         sys.exit(1)
     print(f"[+] Output written to {path}")
     if new_keys:
-        print(f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'.")
+        print(
+            f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'."
+        )
 
 
 def compose_action(description: str, name: str | None = None) -> None:
@@ -34,14 +36,18 @@ def compose_action(description: str, name: str | None = None) -> None:
     else:
         print(f"[*] {msg}")
     if new_keys:
-        print(f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'.")
+        print(
+            f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'."
+        )
 
 
 def compose_integration(description: str, name: str | None = None) -> None:
     """CLI wrapper to generate an integration module from a natural language description."""
     print(f"[*] Generating integration: {description}")
     try:
-        ok, path, msg, new_keys = compose("integration", description=description, name=name)
+        ok, path, msg, new_keys = compose(
+            "integration", description=description, name=name
+        )
     except OrchestraError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -49,8 +55,12 @@ def compose_integration(description: str, name: str | None = None) -> None:
         print(f"Error: {msg}", file=sys.stderr)
         sys.exit(1)
     if path:
-        print(f"[+] Integration written to local_actions/local_integrations/{Path(path).name}")
+        print(
+            f"[+] Integration written to local_actions/local_integrations/{Path(path).name}"
+        )
     else:
         print(f"[*] {msg}")
     if new_keys:
-        print(f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'.")
+        print(
+            f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'."
+        )

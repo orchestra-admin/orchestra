@@ -7,7 +7,7 @@ from orchestra_core.llm import llm_query
 
 def _summarise_playbook(path: Path) -> str:
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             lines = f.readlines()
     except Exception:
         return ""
@@ -36,10 +36,10 @@ def review_playbook(playbook_path: str) -> str:
     playbook_file = Path(playbook_path)
 
     prompt_path = Path(__file__).parent / "review_prompt.md"
-    with open(prompt_path, "r") as f:
+    with open(prompt_path) as f:
         system_prompt = f.read()
 
-    with open(playbook_file, "r") as f:
+    with open(playbook_file) as f:
         playbook_text = f.read()
 
     all_actions = build_action_index(project_root)
@@ -58,7 +58,7 @@ def review_playbook(playbook_path: str) -> str:
 
     template_path = project_root / "playbooks" / "template.md"
     if template_path.exists():
-        with open(template_path, "r") as f:
+        with open(template_path) as f:
             template_text = f.read()
     else:
         template_text = "(No template found)"
@@ -75,7 +75,11 @@ def review_playbook(playbook_path: str) -> str:
             else:
                 existing_summaries.append(f"- {pb.name}")
 
-    existing_playbooks_text = "\n".join(existing_summaries) if existing_summaries else "(No other playbooks found)"
+    existing_playbooks_text = (
+        "\n".join(existing_summaries)
+        if existing_summaries
+        else "(No other playbooks found)"
+    )
 
     user_message = (
         f"## Playbook to Review\n\n{playbook_text}\n\n"

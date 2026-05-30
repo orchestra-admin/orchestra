@@ -1,12 +1,16 @@
+import logging
 import re
 from pathlib import Path
-import logging
 
-from composer_agent.composer_tasks.compose_action import compose_action as _compose_action
-from composer_agent.composer_tasks.compose_integration import compose_integration as _compose_integration
+from composer_agent.composer_tasks.compose_action import (
+    compose_action as _compose_action,
+)
+from composer_agent.composer_tasks.compose_integration import (
+    compose_integration as _compose_integration,
+)
 from composer_agent.composer_tasks.composer_helpers import (
-    MAX_RETRIES,
     COMPOSE_RESULT,
+    MAX_RETRIES,
     _format_actions,
     _read_index,
     _read_integration_index,
@@ -14,9 +18,9 @@ from composer_agent.composer_tasks.composer_helpers import (
     _validate_python,
     _write_action,
 )
-from orchestra_core.llm import llm_query
-from orchestra_core.config import ACTIONS_DIR, get_project_root
+from orchestra_core.config import get_project_root
 from orchestra_core.index import build_action_index, build_integration_index
+from orchestra_core.llm import llm_query
 from orchestra_core.secrets import sync_env_keys
 
 logger = logging.getLogger(__name__)
@@ -43,14 +47,21 @@ def _parse_output(raw: str) -> tuple[dict[str, str], str]:
     return (actions, script)
 
 
-def compose_playbook(playbook_path: str | Path, output_path: str | Path | None = None) -> COMPOSE_RESULT:
+def compose_playbook(
+    playbook_path: str | Path, output_path: str | Path | None = None
+) -> COMPOSE_RESULT:
     """Convert a playbook markdown file into an executable musicsheet script."""
     project_root = get_project_root()
     playbook_path = Path(playbook_path)
     musicsheets_dir = project_root / "musicsheets"
 
     if not musicsheets_dir.is_dir():
-        return (False, None, "musicsheets/ not found. Run this command from an initialized Orchestra project.", [])
+        return (
+            False,
+            None,
+            "musicsheets/ not found. Run this command from an initialized Orchestra project.",
+            [],
+        )
 
     build_action_index(project_root)
     build_integration_index(project_root)
@@ -60,17 +71,33 @@ def compose_playbook(playbook_path: str | Path, output_path: str | Path | None =
     else:
         output_path = Path(output_path)
 
-    with open(playbook_path, "r") as f:
+    with open(playbook_path) as f:
         playbook_text = f.read()
 
     prompt_path = Path(__file__).parent / "composer.md"
-    with open(prompt_path, "r") as f:
+    with open(prompt_path) as f:
         system_prompt = f.read()
 
-    builtin_actions = _read_index(project_root / "musicsheets" / "local_actions" / "builtin_action_index.json")
-    builtin_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "builtin_integration_index.json")
-    local_actions = _read_index(project_root / "musicsheets" / "local_actions" / "local_action_index.json")
-    local_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "local_integration_index.json")
+    builtin_actions = _read_index(
+        project_root / "musicsheets" / "local_actions" / "builtin_action_index.json"
+    )
+    builtin_integrations = _read_integration_index(
+        project_root
+        / "musicsheets"
+        / "local_actions"
+        / "local_integrations"
+        / "builtin_integration_index.json"
+    )
+    local_actions = _read_index(
+        project_root / "musicsheets" / "local_actions" / "local_action_index.json"
+    )
+    local_integrations = _read_integration_index(
+        project_root
+        / "musicsheets"
+        / "local_actions"
+        / "local_integrations"
+        / "local_integration_index.json"
+    )
 
     actions_summary = _format_actions({**builtin_actions, **local_actions})
 
@@ -109,7 +136,9 @@ def compose_playbook(playbook_path: str | Path, output_path: str | Path | None =
 
         validation_error = None
         for filename, action_code in actions.items():
-            validation_error = _validate_python(action_code, f"local_actions/{filename}")
+            validation_error = _validate_python(
+                action_code, f"local_actions/{filename}"
+            )
             if validation_error:
                 break
         if validation_error is None:
@@ -125,16 +154,37 @@ def compose_playbook(playbook_path: str | Path, output_path: str | Path | None =
                 f.write(script)
             break
 
-        logger.warning("compose.llm.retry", extra={"data": {"attempt": attempt, "max_retries": MAX_RETRIES, "error": validation_error}})
+        logger.warning(
+            "compose.llm.retry",
+            extra={
+                "data": {
+                    "attempt": attempt,
+                    "max_retries": MAX_RETRIES,
+                    "error": validation_error,
+                }
+            },
+        )
         if attempt < MAX_RETRIES:
-            user_message = retry_prompt + f"Error: {validation_error}\n\n" + user_message
+            user_message = (
+                retry_prompt + f"Error: {validation_error}\n\n" + user_message
+            )
 
     if validation_error is not None:
-        logger.error("compose.llm.failed_validation", extra={"data": {"error": validation_error, "output_path": str(output_path)}})
+        logger.error(
+            "compose.llm.failed_validation",
+            extra={
+                "data": {"error": validation_error, "output_path": str(output_path)}
+            },
+        )
         draft_path = output_path.with_suffix(".draft.py")
         with open(draft_path, "w") as f:
             f.write(script)
-        return (False, None, f"Generated code failed validation after {MAX_RETRIES} attempts: {validation_error}. Draft written to {draft_path}", [])
+        return (
+            False,
+            None,
+            f"Generated code failed validation after {MAX_RETRIES} attempts: {validation_error}. Draft written to {draft_path}",
+            [],
+        )
 
     build_action_index(project_root)
     integrations = build_integration_index(project_root)

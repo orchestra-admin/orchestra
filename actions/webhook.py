@@ -6,6 +6,7 @@ import sys
 # get_payload() can be called multiple times within a musicsheet.
 _PAYLOAD_CACHE = None
 
+
 def get_payload() -> dict:
     """Read the webhook JSON payload from stdin."""
     global _PAYLOAD_CACHE

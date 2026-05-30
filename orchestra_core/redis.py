@@ -1,4 +1,4 @@
-from orchestra_core.config import load_musician_config, get_project_root
+from orchestra_core.config import get_project_root, load_musician_config
 
 
 def get_redis_client() -> "redis.Redis":
@@ -6,7 +6,9 @@ def get_redis_client() -> "redis.Redis":
     try:
         import redis
     except ImportError as exc:
-        raise RuntimeError("redis package is required to run the Orchestra musician.") from exc
+        raise RuntimeError(
+            "redis package is required to run the Orchestra musician."
+        ) from exc
 
     project_root = get_project_root()
     config = load_musician_config(project_root)

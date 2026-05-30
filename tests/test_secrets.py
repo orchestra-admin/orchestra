@@ -17,7 +17,7 @@ def test_load_env_file_reads_key_value_pairs(tmp_path: Path):
 def test_load_env_file_strips_quotes(tmp_path: Path):
     """_load_env_file strips single and double quotes from values."""
     env_file = tmp_path / ".env"
-    env_file.write_text('KEY1="value1"\nKEY2=\'value2\'\n')
+    env_file.write_text("KEY1=\"value1\"\nKEY2='value2'\n")
 
     result = _load_env_file(env_file)
     assert result == {"KEY1": "value1", "KEY2": "value2"}

@@ -115,7 +115,9 @@ class SomeClass:
 def test_build_integration_index_merges_builtin_and_local_integrations(tmp_path: Path):
     """Verify that built-in and local integrations are merged correctly."""
     # Create directory structure
-    local_integrations = tmp_path / "musicsheets" / "local_actions" / "local_integrations"
+    local_integrations = (
+        tmp_path / "musicsheets" / "local_actions" / "local_integrations"
+    )
     local_integrations.mkdir(parents=True)
 
     # Create a local integration
@@ -134,8 +136,13 @@ def get_custom_api_key() -> str:
     # Assert local integration is present
     assert "local_actions.local_integrations.custom" in result
     assert len(result["local_actions.local_integrations.custom"]["functions"]) == 1
-    assert result["local_actions.local_integrations.custom"]["functions"][0]["function"] == "get_custom_api_key"
-    assert "CUSTOM_API_KEY" in result["local_actions.local_integrations.custom"]["secrets"]
+    assert (
+        result["local_actions.local_integrations.custom"]["functions"][0]["function"]
+        == "get_custom_api_key"
+    )
+    assert (
+        "CUSTOM_API_KEY" in result["local_actions.local_integrations.custom"]["secrets"]
+    )
 
     # Assert built-in integrations are still present
     # (slack_integration and virustotal_integration from actions/integrations/)

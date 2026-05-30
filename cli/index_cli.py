@@ -47,4 +47,6 @@ def print_actions() -> None:
 
 def print_integrations() -> None:
     """Print all available integrations from built-in and local integration indices."""
-    _print_index("Available Orchestra Integrations", build_integration_index(get_project_root()))
+    _print_index(
+        "Available Orchestra Integrations", build_integration_index(get_project_root())
+    )

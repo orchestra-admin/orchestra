@@ -2,63 +2,105 @@
 import argparse
 import json
 import sys
-from cli.compose_cli import compose_playbook, compose_action, compose_integration
-from cli.init_cli import init_project
+
+from cli.compose_cli import compose_action, compose_integration, compose_playbook
 from cli.index_cli import print_actions, print_integrations
-from cli.playbook_cli import print_playbooks, activate_playbook, deactivate_playbook, run_playbook, review_playbook
-from cli.schedule_cli import list_schedules, add_schedule, remove_schedule
+from cli.init_cli import init_project
 from cli.musician_cli import run_musician
-from cli.server_cli import start_server
+from cli.playbook_cli import (
+    activate_playbook,
+    deactivate_playbook,
+    print_playbooks,
+    review_playbook,
+    run_playbook,
+)
+from cli.schedule_cli import add_schedule, list_schedules, remove_schedule
 from cli.scheduler_cli import run_scheduler
-from cli.secrets_cli import push_secrets, list_secrets
+from cli.secrets_cli import list_secrets, push_secrets
+from cli.server_cli import start_server
 from orchestra_core.logging import setup_logging
+
 
 def main() -> None:
     """Entry point for the Orchestra SOAR CLI."""
     setup_logging()
     parser = argparse.ArgumentParser(description="Orchestra SOAR CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
-    
-    gen_parser = subparsers.add_parser("compose", help="Generate code from descriptions")
+
+    gen_parser = subparsers.add_parser(
+        "compose", help="Generate code from descriptions"
+    )
     compose_sub = gen_parser.add_subparsers(dest="compose_action", required=True)
 
-    playbook_parser = compose_sub.add_parser("playbook", help="Compose a Python script from a playbook")
+    playbook_parser = compose_sub.add_parser(
+        "playbook", help="Compose a Python script from a playbook"
+    )
     playbook_parser.add_argument("playbook", help="Path to the playbook markdown file")
 
-    action_parser = compose_sub.add_parser("action", help="Generate a reusable action function")
-    action_parser.add_argument("description", help="Description of the action to generate")
-    action_parser.add_argument("--name", default=None, help="Filename for the action (e.g. 'vt_lookup.py')")
+    action_parser = compose_sub.add_parser(
+        "action", help="Generate a reusable action function"
+    )
+    action_parser.add_argument(
+        "description", help="Description of the action to generate"
+    )
+    action_parser.add_argument(
+        "--name", default=None, help="Filename for the action (e.g. 'vt_lookup.py')"
+    )
 
-    integration_parser = compose_sub.add_parser("integration", help="Generate an integration module")
-    integration_parser.add_argument("description", help="Description of the integration to generate")
-    integration_parser.add_argument("--name", default=None, help="Filename for the integration (e.g. 'jira_integration.py')")
+    integration_parser = compose_sub.add_parser(
+        "integration", help="Generate an integration module"
+    )
+    integration_parser.add_argument(
+        "description", help="Description of the integration to generate"
+    )
+    integration_parser.add_argument(
+        "--name",
+        default=None,
+        help="Filename for the integration (e.g. 'jira_integration.py')",
+    )
 
     subparsers.add_parser("init", help="Initialize an Orchestra automation project")
-    
+
     subparsers.add_parser("actions", help="List available actions and update the index")
 
-    subparsers.add_parser("integrations", help="List available integrations and update the index")
+    subparsers.add_parser(
+        "integrations", help="List available integrations and update the index"
+    )
 
-    playbook_parser = subparsers.add_parser("playbook", help="Manage playbooks (list, activate, deactivate)")
+    playbook_parser = subparsers.add_parser(
+        "playbook", help="Manage playbooks (list, activate, deactivate)"
+    )
     playbook_sub = playbook_parser.add_subparsers(dest="playbook_action", required=True)
     playbook_sub.add_parser("list", help="List all available playbooks")
     activate_parser = playbook_sub.add_parser("activate", help="Activate a playbook")
-    activate_parser.add_argument("event_type", help="Event type of the playbook to activate")
-    deactivate_parser = playbook_sub.add_parser("deactivate", help="Deactivate a playbook")
-    deactivate_parser.add_argument("event_type", help="Event type of the playbook to deactivate")
+    activate_parser.add_argument(
+        "event_type", help="Event type of the playbook to activate"
+    )
+    deactivate_parser = playbook_sub.add_parser(
+        "deactivate", help="Deactivate a playbook"
+    )
+    deactivate_parser.add_argument(
+        "event_type", help="Event type of the playbook to deactivate"
+    )
     run_parser = playbook_sub.add_parser("run", help="Run a playbook manually")
     run_parser.add_argument("event_type", help="Event type of the playbook to run")
     run_parser.add_argument("--payload", default="{}", help="JSON payload string")
 
-    review_parser = playbook_sub.add_parser("review", help="Review a playbook and provide feedback")
+    review_parser = playbook_sub.add_parser(
+        "review", help="Review a playbook and provide feedback"
+    )
     review_parser.add_argument("playbook", help="Path to the playbook markdown file")
 
     server_parser = subparsers.add_parser("server", help="Start the webhook server")
-    server_parser.add_argument("--port", type=int, default=8080, help="Port to listen on")
+    server_parser.add_argument(
+        "--port", type=int, default=8080, help="Port to listen on"
+    )
 
     subparsers.add_parser("musician", help="Start the local Redis musician")
 
-    schedule_parser = subparsers.add_parser("schedule", help="Manage playbook schedules (list, add, remove)")
+    schedule_parser = subparsers.add_parser(
+        "schedule", help="Manage playbook schedules (list, add, remove)"
+    )
     schedule_sub = schedule_parser.add_subparsers(dest="schedule_action", required=True)
     schedule_sub.add_parser("list", help="List all scheduled playbooks")
     add_parser = schedule_sub.add_parser("add", help="Add or update a schedule")
@@ -69,13 +111,15 @@ def main() -> None:
 
     subparsers.add_parser("scheduler", help="Start the schedule-based trigger process")
 
-    secrets_parser = subparsers.add_parser("secrets", help="Manage secrets (push, list)")
+    secrets_parser = subparsers.add_parser(
+        "secrets", help="Manage secrets (push, list)"
+    )
     secrets_sub = secrets_parser.add_subparsers(dest="secrets_action", required=True)
     secrets_sub.add_parser("push", help="Push .env secrets to the configured backend")
     secrets_sub.add_parser("list", help="List known secret keys and their status")
-    
+
     args = parser.parse_args()
-    
+
     if args.command == "compose":
         if args.compose_action == "playbook":
             compose_playbook(args.playbook)
@@ -137,6 +181,7 @@ def main() -> None:
             push_secrets()
         elif args.secrets_action == "list":
             list_secrets()
+
 
 if __name__ == "__main__":
     main()

@@ -31,15 +31,21 @@ def _validate_python(code: str, label: str = "<composer_output>") -> str | None:
 
 def _write_action(base_dir: Path, relative_path: str, code: str) -> None:
     if ".." in relative_path or "/" in relative_path or "\\" in relative_path:
-        raise ValueError(f"Invalid action filename '{relative_path}': must be a simple .py stem")
+        raise ValueError(
+            f"Invalid action filename '{relative_path}': must be a simple .py stem"
+        )
     if not relative_path.endswith(".py"):
-        raise ValueError(f"Invalid action filename '{relative_path}': must end with .py")
+        raise ValueError(
+            f"Invalid action filename '{relative_path}': must end with .py"
+        )
 
     target = (base_dir / relative_path).resolve()
     try:
         target.relative_to(base_dir.resolve())
     except ValueError:
-        raise ValueError(f"Invalid action filename '{relative_path}': path escapes base directory") from None
+        raise ValueError(
+            f"Invalid action filename '{relative_path}': path escapes base directory"
+        ) from None
     target.parent.mkdir(parents=True, exist_ok=True)
     code = code.strip() + "\n"
 
@@ -55,7 +61,7 @@ def _write_action(base_dir: Path, relative_path: str, code: str) -> None:
 def _read_index(path: Path) -> list | dict:
     if not path.exists():
         return []
-    with open(path, "r") as f:
+    with open(path) as f:
         try:
             return json.load(f)
         except json.JSONDecodeError:

@@ -1,11 +1,12 @@
 import json
-import urllib.request
 import urllib.error
+import urllib.request
+
 from .integrations.virustotal_integration import get_api_key as _get_api_key
 
+
 def lookup_ip(ip: str) -> dict:
-    """
-    Look up an IP address on VirusTotal and return a structured report.
+    """Look up an IP address on VirusTotal and return a structured report.
 
     Args:
         ip: IPv4 or IPv6 address to look up
@@ -32,34 +33,29 @@ def lookup_ip(ip: str) -> dict:
     api_key = _get_api_key()
     url = f"https://www.virustotal.com/api/v3/ip_addresses/{ip}"
     req = urllib.request.Request(
-        url,
-        headers={
-            "x-apikey": api_key,
-            "accept": "application/json"
-        },
-        method="GET"
+        url, headers={"x-apikey": api_key, "accept": "application/json"}, method="GET"
     )
-    
+
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.load(resp).get("data", {})
     except urllib.error.URLError:
         raise Exception("VirusTotal API request failed")
-    
+
     attributes = data.get("attributes", {})
     stats = attributes.get("last_analysis_stats", {})
-    
+
     malicious = stats.get("malicious", 0)
     suspicious = stats.get("suspicious", 0)
     harmless = stats.get("harmless", 0)
-    
+
     if malicious > 3:
         verdict = "MALICIOUS"
     elif malicious >= 1 or suspicious > 5:
         verdict = "SUSPICIOUS"
     else:
         verdict = "CLEAN"
-        
+
     return {
         "ip": ip,
         "verdict": verdict,
@@ -69,5 +65,5 @@ def lookup_ip(ip: str) -> dict:
         "country": attributes.get("country", "Unknown"),
         "isp": attributes.get("as_owner", "Unknown"),
         "reputation": attributes.get("reputation", 0),
-        "link": f"https://www.virustotal.com/gui/ip-address/{ip}"
+        "link": f"https://www.virustotal.com/gui/ip-address/{ip}",
     }

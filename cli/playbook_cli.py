@@ -1,14 +1,14 @@
 import sys
 from pathlib import Path
 
+from composer_agent.composer_tasks.review import review_playbook as _review_playbook
+from conductor.conductor_tasks.musician import build_queue_job, execute_job
 from orchestra_core.config import (
     DEACTIVATED_SET_KEY,
     get_project_root,
 )
-from orchestra_core.redis import get_redis_client
 from orchestra_core.exceptions import OrchestraError
-from conductor.conductor_tasks.musician import build_queue_job, execute_job
-from composer_agent.composer_tasks.review import review_playbook as _review_playbook
+from orchestra_core.redis import get_redis_client
 
 
 def is_playbook_deactivated(redis_client: "redis.Redis", event_type: str) -> bool:
@@ -23,7 +23,9 @@ def deactivate_playbook(event_type: str) -> None:
     script_path = project_root / "musicsheets" / f"{event_type}.py"
 
     if not script_path.exists():
-        print(f"[!] Warning: No musicsheet found for '{event_type}', but writing to Redis anyway.")
+        print(
+            f"[!] Warning: No musicsheet found for '{event_type}', but writing to Redis anyway."
+        )
 
     if redis_client.sismember(DEACTIVATED_SET_KEY, event_type):
         print(f"[*] Playbook '{event_type}' is already inactive.")
@@ -79,7 +81,6 @@ def print_playbooks() -> None:
 
 def run_playbook(event_type: str, payload: dict | None = None) -> None:
     """Manually execute a playbook by its event type with an optional payload."""
-
     payload = payload or {}
     payload["event_type"] = event_type
 
@@ -103,9 +104,13 @@ def run_playbook(event_type: str, payload: dict | None = None) -> None:
     elif status == "missing_script":
         print(f"[!] No musicsheet found for '{event_type}' at {result['script_path']}")
     elif status == "timeout":
-        print(f"[!] Playbook '{event_type}' timed out after {result['timeout_seconds']}s.")
+        print(
+            f"[!] Playbook '{event_type}' timed out after {result['timeout_seconds']}s."
+        )
     else:
-        print(f"[!] Playbook '{event_type}' failed with exit code {result.get('returncode')}.")
+        print(
+            f"[!] Playbook '{event_type}' failed with exit code {result.get('returncode')}."
+        )
 
 
 def review_playbook(playbook_path: str) -> None:

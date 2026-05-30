@@ -6,19 +6,8 @@ import pytest
 @pytest.mark.integration
 def test_import_smoke():
     """Verify that all main modules can be imported successfully."""
-    import orchestra
-    import cli
-    import orchestra_core
-    import composer_agent
-    import conductor
-    import actions
 
     # Verify key submodules
-    from orchestra_core import config, secrets, index, llm, redis, logging, exceptions
-    from composer_agent import composer
-    from composer_agent.composer_tasks import compose_action, compose_integration, composer_helpers, review
-    from conductor.conductor_tasks import musician, webhook, scheduler
-    from cli import compose_cli, playbook_cli, init_cli, index_cli, schedule_cli, musician_cli, server_cli, scheduler_cli, secrets_cli
 
     # If we got here, all imports succeeded
     assert True

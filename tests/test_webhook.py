@@ -74,7 +74,9 @@ def test_is_valid_signature_rejects_bad_signature():
     raw_body = b'{"event_type": "test"}'
     secret = "secret"
 
-    bad_signature = "sha256=0000000000000000000000000000000000000000000000000000000000000000"
+    bad_signature = (
+        "sha256=0000000000000000000000000000000000000000000000000000000000000000"
+    )
 
     assert is_valid_signature(raw_body, bad_signature, secret) is False
 

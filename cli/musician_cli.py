@@ -5,7 +5,6 @@ from conductor.conductor_tasks.musician import run_musician as _run_musician
 
 def run_musician() -> int:
     """CLI wrapper to run the Orchestra musician job processor."""
-
     print("[*] Orchestra musician started")
     try:
         return _run_musician()

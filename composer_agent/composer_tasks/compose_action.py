@@ -1,10 +1,10 @@
+import logging
 import re
 from pathlib import Path
-import logging
 
 from composer_agent.composer_tasks.composer_helpers import (
-    MAX_RETRIES,
     COMPOSE_RESULT,
+    MAX_RETRIES,
     _format_actions,
     _read_index,
     _read_integration_index,
@@ -38,25 +38,46 @@ def compose_action(description: str, name: str | None = None) -> COMPOSE_RESULT:
     local_actions_dir = project_root / "musicsheets" / "local_actions"
 
     if not local_actions_dir.exists():
-        return (False, None, "local_actions/ not found. Run this command from an initialized Orchestra project.", [])
+        return (
+            False,
+            None,
+            "local_actions/ not found. Run this command from an initialized Orchestra project.",
+            [],
+        )
 
     build_action_index(project_root)
     build_integration_index(project_root)
 
     prompt_path = Path(__file__).parent / "compose_action.md"
-    with open(prompt_path, "r") as f:
+    with open(prompt_path) as f:
         system_prompt = f.read()
 
-    builtin_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "builtin_integration_index.json")
-    local_action_index = _read_index(project_root / "musicsheets" / "local_actions" / "local_action_index.json")
-    local_integrations = _read_integration_index(project_root / "musicsheets" / "local_actions" / "local_integrations" / "local_integration_index.json")
+    builtin_integrations = _read_integration_index(
+        project_root
+        / "musicsheets"
+        / "local_actions"
+        / "local_integrations"
+        / "builtin_integration_index.json"
+    )
+    local_action_index = _read_index(
+        project_root / "musicsheets" / "local_actions" / "local_action_index.json"
+    )
+    local_integrations = _read_integration_index(
+        project_root
+        / "musicsheets"
+        / "local_actions"
+        / "local_integrations"
+        / "local_integration_index.json"
+    )
 
     reference_example = ""
     reference_path = ACTIONS_DIR / "slack.py"
     if reference_path.exists():
         reference_example = reference_path.read_text().strip()
 
-    integration_summary = _format_actions({**builtin_integrations, **local_integrations})
+    integration_summary = _format_actions(
+        {**builtin_integrations, **local_integrations}
+    )
 
     all_secrets = set()
     for info in {**builtin_integrations, **local_integrations}.values():
@@ -68,7 +89,9 @@ def compose_action(description: str, name: str | None = None) -> COMPOSE_RESULT:
         secrets_context = "\n".join(f"- {k}" for k in sorted(all_secrets))
 
     existing_files_context = "(No existing local actions)"
-    local_files = sorted(p for p in local_actions_dir.glob("*.py") if p.name != "__init__.py")
+    local_files = sorted(
+        p for p in local_actions_dir.glob("*.py") if p.name != "__init__.py"
+    )
     if local_files:
         lines = []
         for lf in local_files:
@@ -77,14 +100,20 @@ def compose_action(description: str, name: str | None = None) -> COMPOSE_RESULT:
             if info:
                 func_desc = []
                 for func in info["functions"]:
-                    func_desc.append(f"  {func['function']}({func.get('signature', '')})")
+                    func_desc.append(
+                        f"  {func['function']}({func.get('signature', '')})"
+                    )
                 if func_desc:
                     lines.append(f"{lf.name}:")
                     lines.extend(func_desc)
         if lines:
             existing_files_context = "\n".join(lines)
 
-    local_files_context = "\n".join(f"- {f}" for f in (p.name for p in local_files)) if local_files else "(None)"
+    local_files_context = (
+        "\n".join(f"- {f}" for f in (p.name for p in local_files))
+        if local_files
+        else "(None)"
+    )
 
     retry_prompt = (
         "The previous response contained invalid Python code. "
@@ -116,13 +145,31 @@ def compose_action(description: str, name: str | None = None) -> COMPOSE_RESULT:
         if validation_error is None:
             break
 
-        logger.warning("compose.llm.retry", extra={"data": {"attempt": attempt, "max_retries": MAX_RETRIES, "error": validation_error}})
+        logger.warning(
+            "compose.llm.retry",
+            extra={
+                "data": {
+                    "attempt": attempt,
+                    "max_retries": MAX_RETRIES,
+                    "error": validation_error,
+                }
+            },
+        )
         if attempt < MAX_RETRIES:
-            user_message = retry_prompt + f"Error: {validation_error}\n\n" + user_message
+            user_message = (
+                retry_prompt + f"Error: {validation_error}\n\n" + user_message
+            )
 
     if validation_error is not None:
-        logger.error("compose.llm.failed_validation", extra={"data": {"error": validation_error}})
-        return (False, None, f"Generated code failed validation after {MAX_RETRIES} attempts: {validation_error}", [])
+        logger.error(
+            "compose.llm.failed_validation", extra={"data": {"error": validation_error}}
+        )
+        return (
+            False,
+            None,
+            f"Generated code failed validation after {MAX_RETRIES} attempts: {validation_error}",
+            [],
+        )
 
     if code.strip().startswith("# SKIP"):
         skip_msg = code.strip().splitlines()[0]
@@ -130,7 +177,12 @@ def compose_action(description: str, name: str | None = None) -> COMPOSE_RESULT:
 
     filename = name or _parse_name(code)
     if not filename:
-        return (False, None, "Action output must include a # filename.py comment on the first line, or use --name.", [])
+        return (
+            False,
+            None,
+            "Action output must include a # filename.py comment on the first line, or use --name.",
+            [],
+        )
 
     code = _strip_name_line(code)
 

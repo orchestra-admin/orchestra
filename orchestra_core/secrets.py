@@ -8,7 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 def _load_secrets_config() -> dict:
-    return load_project_config().get("secrets", {"backend": "aws_ssm", "backend_configs": {}})
+    return load_project_config().get(
+        "secrets", {"backend": "aws_ssm", "backend_configs": {}}
+    )
 
 
 def _load_env_file(path: Path) -> dict:
@@ -16,7 +18,7 @@ def _load_env_file(path: Path) -> dict:
     if not path.exists():
         return env_vars
 
-    with open(path, "r") as f:
+    with open(path) as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#") or "=" not in line:
@@ -138,7 +140,9 @@ def _set_secret_aws_ssm(key: str, value: str) -> None:
     if region:
         client_kwargs["region_name"] = region
     client = boto3.client("ssm", **client_kwargs)
-    client.put_parameter(Name=full_key, Value=value, Type="SecureString", Overwrite=True)
+    client.put_parameter(
+        Name=full_key, Value=value, Type="SecureString", Overwrite=True
+    )
 
 
 def _set_secret_docker_secrets(key: str, value: str) -> None:
@@ -217,6 +221,9 @@ def sync_env_keys(integrations: dict) -> list[str]:
                 f.write("\n")
             for key in missing:
                 f.write(f"{key}=\n")
-        logger.info("admin.env.synced", extra={"data": {"added": len(missing), "keys": sorted(missing)}})
+        logger.info(
+            "admin.env.synced",
+            extra={"data": {"added": len(missing), "keys": sorted(missing)}},
+        )
 
     return missing

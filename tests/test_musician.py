@@ -1,5 +1,4 @@
 import json
-import sys
 from pathlib import Path
 
 import pytest
@@ -46,19 +45,25 @@ def test_parse_job_rejects_json_strings():
 
 def test_parse_job_rejects_missing_event_type():
     """parse_job raises ValueError when event_type is missing."""
-    with pytest.raises(ValueError, match="Job must include a non-empty string field 'event_type'"):
+    with pytest.raises(
+        ValueError, match="Job must include a non-empty string field 'event_type'"
+    ):
         parse_job(json.dumps({"payload": {}}))
 
 
 def test_parse_job_rejects_non_string_event_type():
     """parse_job raises ValueError when event_type is not a string."""
-    with pytest.raises(ValueError, match="Job must include a non-empty string field 'event_type'"):
+    with pytest.raises(
+        ValueError, match="Job must include a non-empty string field 'event_type'"
+    ):
         parse_job(json.dumps({"event_type": 123, "payload": {}}))
 
 
 def test_parse_job_rejects_empty_event_type():
     """parse_job raises ValueError when event_type is empty."""
-    with pytest.raises(ValueError, match="Job must include a non-empty string field 'event_type'"):
+    with pytest.raises(
+        ValueError, match="Job must include a non-empty string field 'event_type'"
+    ):
         parse_job(json.dumps({"event_type": "", "payload": {}}))
 
 
@@ -70,11 +75,13 @@ def test_parse_job_rejects_non_dict_payload():
 
 def test_parse_job_accepts_valid_job():
     """parse_job accepts valid jobs and preserves fields."""
-    raw = json.dumps({
-        "event_type": "ip_enrichment",
-        "payload": {"ip": "1.1.1.1"},
-        "metadata": {"source": "webhook"},
-    })
+    raw = json.dumps(
+        {
+            "event_type": "ip_enrichment",
+            "payload": {"ip": "1.1.1.1"},
+            "metadata": {"source": "webhook"},
+        }
+    )
     result = parse_job(raw)
     assert result["event_type"] == "ip_enrichment"
     assert result["payload"] == {"ip": "1.1.1.1"}
@@ -121,13 +128,17 @@ def test_build_queue_job_merges_custom_metadata():
 
 def test_build_queue_job_rejects_empty_event_type():
     """build_queue_job raises ValueError for empty event_type."""
-    with pytest.raises(ValueError, match="Payload must include a non-empty string field 'event_type'"):
+    with pytest.raises(
+        ValueError, match="Payload must include a non-empty string field 'event_type'"
+    ):
         build_queue_job({"event_type": ""})
 
 
 def test_build_queue_job_rejects_missing_event_type():
     """build_queue_job raises ValueError when event_type is missing."""
-    with pytest.raises(ValueError, match="Payload must include a non-empty string field 'event_type'"):
+    with pytest.raises(
+        ValueError, match="Payload must include a non-empty string field 'event_type'"
+    ):
         build_queue_job({"data": "no event_type"})
 
 
@@ -157,7 +168,13 @@ def test_build_queue_job_rejects_spaces():
 
 def test_build_queue_job_accepts_valid_event_types():
     """build_queue_job accepts valid event_type patterns."""
-    valid_types = ["ip_enrichment", "daily-report", "test.playbook", "UPPER_case", "a_b-c.d"]
+    valid_types = [
+        "ip_enrichment",
+        "daily-report",
+        "test.playbook",
+        "UPPER_case",
+        "a_b-c.d",
+    ]
     for event_type in valid_types:
         job = build_queue_job({"event_type": event_type})
         assert job["event_type"] == event_type
@@ -277,13 +294,20 @@ def test_execute_job_passes_payload_via_stdin(tmp_path: Path):
 def test_push_dlq_record_excludes_raw_payload():
     """push_dlq_record strips payload from the stored job."""
     fake = FakeRedis()
-    raw_job = json.dumps({
-        "job_id": "abc123",
-        "event_type": "test",
-        "payload": {"secret": "password123"},
-        "metadata": {"source": "webhook"},
-    })
-    result = {"status": "failed", "returncode": 1, "stdout": "output", "stderr": "error"}
+    raw_job = json.dumps(
+        {
+            "job_id": "abc123",
+            "event_type": "test",
+            "payload": {"secret": "password123"},
+            "metadata": {"source": "webhook"},
+        }
+    )
+    result = {
+        "status": "failed",
+        "returncode": 1,
+        "stdout": "output",
+        "stderr": "error",
+    }
 
     push_dlq_record(fake, "orchestra:dlq", raw_job, result)
 
@@ -304,7 +328,9 @@ def test_push_dlq_record_excludes_raw_payload():
 def test_push_dlq_record_excludes_stdout_stderr():
     """push_dlq_record strips stdout and stderr from the result."""
     fake = FakeRedis()
-    raw_job = json.dumps({"job_id": "abc123", "event_type": "test", "payload": {}, "metadata": {}})
+    raw_job = json.dumps(
+        {"job_id": "abc123", "event_type": "test", "payload": {}, "metadata": {}}
+    )
     result = {
         "status": "failed",
         "returncode": 1,
@@ -324,12 +350,14 @@ def test_push_dlq_record_excludes_stdout_stderr():
 def test_push_dlq_record_includes_required_fields():
     """push_dlq_record includes job_id, event_type, metadata, result, and failed_at."""
     fake = FakeRedis()
-    raw_job = json.dumps({
-        "job_id": "abc123",
-        "event_type": "test",
-        "payload": {"data": "value"},
-        "metadata": {"source": "webhook", "received_at": 1234567890},
-    })
+    raw_job = json.dumps(
+        {
+            "job_id": "abc123",
+            "event_type": "test",
+            "payload": {"data": "value"},
+            "metadata": {"source": "webhook", "received_at": 1234567890},
+        }
+    )
     result = {"status": "failed", "returncode": 1}
 
     push_dlq_record(fake, "orchestra:dlq", raw_job, result)

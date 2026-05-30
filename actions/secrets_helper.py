@@ -1,8 +1,8 @@
 from orchestra_core.secrets import get_secret as _get_secret
 
+
 def get_secret(key: str) -> str:
-    """
-    Retrieve a secret value by key from the configured secrets backend.
+    """Retrieve a secret value by key from the configured secrets backend.
 
     Args:
         key: The secret key to look up (e.g. "VT_API_KEY", "SLACK_WEBHOOK_URL").

@@ -42,7 +42,7 @@ def load_project_config(project_root: Path | None = None) -> dict:
     if not config_path.exists():
         return {}
 
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return json.load(f)
 
 
@@ -65,6 +65,7 @@ def get_project_config_path(project_root: Path | None = None) -> Path:
     """Return the absolute path to the project's ``orchestra.json``."""
     project_root = project_root or get_project_root()
     return project_root / ".local_config" / "orchestra.json"
+
 
 def load_musician_config(project_root: Path | None = None) -> dict:
     """Build a merged config dict for Redis connection and job processing.

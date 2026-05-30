@@ -1,8 +1,8 @@
 import ast
 import json
+import logging
 import re
 from pathlib import Path
-import logging
 
 from orchestra_core.config import ACTIONS_DIR
 
@@ -15,7 +15,7 @@ def _extract_secret_keys(filepath: Path) -> list[str]:
     """Scan a Python source file for get_secret("<KEY>") call and return the key names."""
     keys = set()
     try:
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             source = f.read()
         for key in GET_SECRET_PATTERN.findall(source):
             keys.add(key)
@@ -80,7 +80,9 @@ def _get_docstring_from_ast(func_node: ast.FunctionDef | ast.AsyncFunctionDef) -
     return ""
 
 
-def _build_func_index_from_dir(directory: Path, module_prefix: str, output_json_path: Path) -> dict:
+def _build_func_index_from_dir(
+    directory: Path, module_prefix: str, output_json_path: Path
+) -> dict:
     """Scan .py files in a directory and return a grouped dict index with module name as key.
 
     Each module entry contains a secrets list extracted from get_secret() calls
@@ -103,7 +105,10 @@ def _build_func_index_from_dir(directory: Path, module_prefix: str, output_json_
             source = file.read_text(encoding="utf-8")
             tree = ast.parse(source, filename=str(file))
         except Exception as e:
-            logger.warning("index.parse_failed", extra={"data": {"module": module_name, "error": str(e)}})
+            logger.warning(
+                "index.parse_failed",
+                extra={"data": {"module": module_name, "error": str(e)}},
+            )
             continue
 
         functions = []
@@ -118,13 +123,15 @@ def _build_func_index_from_dir(directory: Path, module_prefix: str, output_json_
 
             description = ""
             if doc:
-                description = doc.strip().split('\n\n')[0].replace('\n', ' ').strip()
+                description = doc.strip().split("\n\n")[0].replace("\n", " ").strip()
 
-            functions.append({
-                "function": node.name,
-                "signature": sig,
-                "description": description,
-            })
+            functions.append(
+                {
+                    "function": node.name,
+                    "signature": sig,
+                    "description": description,
+                }
+            )
 
         if functions:
             grouped[module_name] = {"secrets": secret_keys, "functions": functions}
@@ -140,8 +147,14 @@ def build_action_index(project_root: Path) -> dict:
     """Build and merge built-in + local action indexes into a single grouped dict."""
     local_base = project_root / "musicsheets" / "local_actions"
 
-    actions = _build_func_index_from_dir(ACTIONS_DIR, "actions", local_base / "builtin_action_index.json")
-    actions.update(_build_func_index_from_dir(local_base, "local_actions", local_base / "local_action_index.json"))
+    actions = _build_func_index_from_dir(
+        ACTIONS_DIR, "actions", local_base / "builtin_action_index.json"
+    )
+    actions.update(
+        _build_func_index_from_dir(
+            local_base, "local_actions", local_base / "local_action_index.json"
+        )
+    )
     return actions
 
 
@@ -149,6 +162,16 @@ def build_integration_index(project_root: Path) -> dict:
     """Build and merge built-in + local integration indexes into a single grouped dict."""
     local_base = project_root / "musicsheets" / "local_actions" / "local_integrations"
 
-    integrations = _build_func_index_from_dir(ACTIONS_DIR / "integrations", "actions.integrations", local_base / "builtin_integration_index.json")
-    integrations.update(_build_func_index_from_dir(local_base, "local_actions.local_integrations", local_base / "local_integration_index.json"))
+    integrations = _build_func_index_from_dir(
+        ACTIONS_DIR / "integrations",
+        "actions.integrations",
+        local_base / "builtin_integration_index.json",
+    )
+    integrations.update(
+        _build_func_index_from_dir(
+            local_base,
+            "local_actions.local_integrations",
+            local_base / "local_integration_index.json",
+        )
+    )
     return integrations

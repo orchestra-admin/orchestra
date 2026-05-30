@@ -1,11 +1,12 @@
 import json
-import urllib.request
 import urllib.error
+import urllib.request
+
 from .integrations.slack_integration import get_webhook_url as _get_webhook_url
 
+
 def send_message(text: str) -> dict:
-    """
-    Send a text message to the configured Slack channel via Incoming Webhook.
+    """Send a text message to the configured Slack channel via Incoming Webhook.
 
     Args:
         text: The message text to send to Slack.
@@ -26,7 +27,7 @@ def send_message(text: str) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             resp.read()
-    except urllib.error.URLError as e:
+    except urllib.error.URLError:
         raise Exception("Slack API request failed")
 
     return {"ok": True}

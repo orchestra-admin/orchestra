@@ -33,7 +33,9 @@ def _load_llm_config() -> dict:
     return merged
 
 
-def _openai_query(system_prompt: str, user_prompt: str, model: str, api_key: str, base_url: str | None) -> str:
+def _openai_query(
+    system_prompt: str, user_prompt: str, model: str, api_key: str, base_url: str | None
+) -> str:
     import openai
 
     client = openai.OpenAI(api_key=api_key, base_url=base_url)
@@ -47,7 +49,9 @@ def _openai_query(system_prompt: str, user_prompt: str, model: str, api_key: str
     return response.choices[0].message.content
 
 
-def _anthropic_query(system_prompt: str, user_prompt: str, model: str, api_key: str) -> str:
+def _anthropic_query(
+    system_prompt: str, user_prompt: str, model: str, api_key: str
+) -> str:
     import anthropic
 
     client = anthropic.Anthropic(api_key=api_key)
@@ -60,7 +64,9 @@ def _anthropic_query(system_prompt: str, user_prompt: str, model: str, api_key: 
     return response.content[0].text
 
 
-def _gemini_query(system_prompt: str, user_prompt: str, model: str, api_key: str) -> str:
+def _gemini_query(
+    system_prompt: str, user_prompt: str, model: str, api_key: str
+) -> str:
     import google.generativeai as genai
 
     genai.configure(api_key=api_key)

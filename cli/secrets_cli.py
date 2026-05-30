@@ -2,14 +2,14 @@ import json
 import sys
 from pathlib import Path
 
-from orchestra_core.config import ACTIONS_DIR, get_project_root, get_project_config_path
+from orchestra_core.config import get_project_config_path, get_project_root
 from orchestra_core.secrets import get_secret, set_secret
 
 
 def _read_index_silent(path: Path) -> list | dict:
     if not path.exists():
         return []
-    with open(path, "r") as f:
+    with open(path) as f:
         try:
             return json.load(f)
         except json.JSONDecodeError:
@@ -24,11 +24,13 @@ def push_secrets() -> None:
     backend = "aws_ssm"
     dotenv_path = ".env"
     if config_path.exists():
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             data = json.load(f)
         secrets_cfg = data.get("secrets", {})
         backend = secrets_cfg.get("backend", "aws_ssm")
-        dotenv_path = secrets_cfg.get("backend_configs", {}).get("env", {}).get("path", ".env")
+        dotenv_path = (
+            secrets_cfg.get("backend_configs", {}).get("env", {}).get("path", ".env")
+        )
 
     if backend == "env":
         print("[*] Already using env backend — nothing to push.")
@@ -88,8 +90,16 @@ def list_secrets() -> None:
     project_root = get_project_root()
 
     index_paths = [
-        project_root / "musicsheets" / "local_actions" / "local_integrations" / "builtin_integration_index.json",
-        project_root / "musicsheets" / "local_actions" / "local_integrations" / "local_integration_index.json",
+        project_root
+        / "musicsheets"
+        / "local_actions"
+        / "local_integrations"
+        / "builtin_integration_index.json",
+        project_root
+        / "musicsheets"
+        / "local_actions"
+        / "local_integrations"
+        / "local_integration_index.json",
     ]
 
     all_secrets = set()

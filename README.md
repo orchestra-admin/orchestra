@@ -337,6 +337,51 @@ Tests are deterministic, offline, and fast. No external network calls, Docker, R
 
 <br>
 
+## Linting
+
+Install linting tools:
+
+```bash
+python3 -m pip install -e ".[lint]"
+```
+
+Run linter:
+
+```bash
+ruff check .
+```
+
+Auto-fix safe issues:
+
+```bash
+ruff check --fix .
+```
+
+Format code:
+
+```bash
+black .
+```
+
+### Pre-commit Hooks
+
+Install pre-commit hooks to run linters automatically before each commit:
+
+```bash
+python3 -m pip install -e ".[lint]"
+pre-commit install
+```
+
+Now every `git commit` will run Ruff and Black automatically. If issues are found, the commit will be blocked until they're fixed.
+
+To skip hooks for a specific commit (not recommended):
+
+```bash
+git commit --no-verify -m "your message"
+```
+
+<br>
+
 ## Requirements
 
 - Python >= 3.11

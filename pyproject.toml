@@ -23,6 +23,11 @@ test = [
   "pytest",
   "pytest-cov",
 ]
+lint = [
+  "ruff>=0.4.0",
+  "black>=24.0.0",
+  "pre-commit>=3.7.0",
+]
 
 [project.scripts]
 orchestra = "orchestra:main"
@@ -53,3 +58,37 @@ testpaths = ["tests"]
 markers = [
   "integration: slower smoke tests that may require package install, Docker, or subprocess CLI execution",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort
+  "UP",  # pyupgrade
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "SIM", # flake8-simplify
+  "T20", # flake8-print (AGENTS.md compliance)
+  "D",   # pydocstyle (AGENTS.md compliance)
+]
+ignore = [
+  "D100",  # Missing docstring in public module (too noisy)
+  "D104",  # Missing docstring in public package
+  "D203",  # one-blank-line-before-class (conflicts with D211)
+  "D213",  # multi-line-summary-second-line (conflicts with D212)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]  # Don't require docstrings in tests
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+skip-string-normalization = false

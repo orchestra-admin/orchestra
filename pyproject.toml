@@ -84,6 +84,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]  # Don't require docstrings in tests
+"cli/*" = ["T201"]  # Allow print() in CLI layer (AGENTS.md)
+"orchestra.py" = ["T201"]  # Allow print() in router (AGENTS.md)
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

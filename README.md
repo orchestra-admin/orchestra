@@ -305,6 +305,38 @@ Each script runs as an isolated subprocess with stdin piping, subprocess timeout
 
 <br>
 
+## Testing
+
+Install test dependencies:
+
+```bash
+python3 -m pip install -e ".[test]"
+```
+
+Run unit tests:
+
+```bash
+python3 -m compileall orchestra.py cli composer_agent conductor orchestra_core actions
+pytest
+```
+
+Run integration smoke tests:
+
+```bash
+pytest -m integration
+```
+
+Run all tests (unit + integration):
+
+```bash
+pytest
+pytest -m integration
+```
+
+Tests are deterministic, offline, and fast. No external network calls, Docker, Redis, AWS, OpenAI, Slack, or VirusTotal required for default CI.
+
+<br>
+
 ## Requirements
 
 - Python >= 3.11

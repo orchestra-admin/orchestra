@@ -20,7 +20,8 @@ def compose_playbook(playbook_path: str) -> None:
     print(f"[+] Output written to {path}")
     if new_keys:
         print(
-            f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'."
+            f"[*] New .env keys added: {', '.join(new_keys)}. "
+            "Fill them in and run 'orchestra secrets push'."
         )
 
 
@@ -37,12 +38,13 @@ def compose_action(description: str, name: str | None = None) -> None:
         print(f"[*] {msg}")
     if new_keys:
         print(
-            f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'."
+            f"[*] New .env keys added: {', '.join(new_keys)}. "
+            "Fill them in and run 'orchestra secrets push'."
         )
 
 
 def compose_integration(description: str, name: str | None = None) -> None:
-    """CLI wrapper to generate an integration module from a natural language description."""
+    """CLI wrapper to generate an integration module from a description."""
     print(f"[*] Generating integration: {description}")
     try:
         ok, path, msg, new_keys = compose(
@@ -55,12 +57,12 @@ def compose_integration(description: str, name: str | None = None) -> None:
         print(f"Error: {msg}", file=sys.stderr)
         sys.exit(1)
     if path:
-        print(
-            f"[+] Integration written to local_actions/local_integrations/{Path(path).name}"
-        )
+        integration_path = f"local_actions/local_integrations/{Path(path).name}"
+        print(f"[+] Integration written to {integration_path}")
     else:
         print(f"[*] {msg}")
     if new_keys:
         print(
-            f"[*] New .env keys added: {', '.join(new_keys)}. Fill them in and run 'orchestra secrets push'."
+            f"[*] New .env keys added: {', '.join(new_keys)}. "
+            "Fill them in and run 'orchestra secrets push'."
         )

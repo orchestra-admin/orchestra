@@ -122,7 +122,7 @@ def test_get_signature_header_supports_hub_header():
 
 
 def test_get_signature_header_prefers_orchestra_header():
-    """get_signature_header prefers x-orchestra-signature-256 over x-hub-signature-256."""
+    """get_signature_header prefers x-orchestra-signature-256 over x-hub."""
     headers = {
         "x-orchestra-signature-256": "sha256=orchestra_sig",
         "x-hub-signature-256": "sha256=hub_sig",

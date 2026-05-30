@@ -19,7 +19,7 @@ def _is_docker_installed() -> bool:
 
 
 def init_project() -> None:
-    """Initialize an Orchestra project by copying template assets and creating a .env file."""
+    """Initialize an Orchestra project by copying template assets."""
     project_root = get_project_root()
 
     shutil.copytree(INIT_ASSETS_DIR, project_root, dirs_exist_ok=True)
@@ -58,7 +58,8 @@ def init_project() -> None:
 
     if not _is_docker_installed():
         print(
-            "\n[!] Docker is not installed. Orchestra requires Docker to run the built-in Automation Engine."
+            "\n[!] Docker is not installed. Orchestra requires Docker to run "
+            "the built-in Automation Engine."
         )
         print("    macOS: Install Docker Desktop")
         print("    Linux: Install Docker Engine")

@@ -73,7 +73,8 @@ def test_docker_help_smoke():
     - Not needed for fast CI feedback
 
     To run manually:
-        pytest -m integration --run-docker tests/test_integration_smoke.py::test_docker_help_smoke
+        pytest -m integration --run-docker\
+            tests/test_integration_smoke.py::test_docker_help_smoke
     """
     # Build Docker image
     build_result = subprocess.run(

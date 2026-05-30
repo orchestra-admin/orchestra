@@ -59,7 +59,7 @@ def compose_playbook(
         return (
             False,
             None,
-            "musicsheets/ not found. Run this command from an initialized Orchestra project.",
+            "musicsheets/ not found. Run this from an initialized Orchestra project.",
             [],
         )
 
@@ -112,7 +112,8 @@ def compose_playbook(
 
     retry_prompt = (
         "The previous response contained invalid Python code. "
-        "Please output valid Python using the required markers with no markdown fences or extra text.\n\n"
+        "Please output valid Python using the required markers "
+        "with no markdown fences or extra text.\n\n"
     )
 
     user_message = (
@@ -182,7 +183,10 @@ def compose_playbook(
         return (
             False,
             None,
-            f"Generated code failed validation after {MAX_RETRIES} attempts: {validation_error}. Draft written to {draft_path}",
+            (
+                f"Generated code failed validation after {MAX_RETRIES} "
+                f"attempts: {validation_error}. Draft written to {draft_path}"
+            ),
             [],
         )
 
@@ -194,7 +198,7 @@ def compose_playbook(
 
 
 def compose(target: str, **kwargs) -> COMPOSE_RESULT:
-    """Route compose commands to the appropriate target (playbook, action, or integration)."""
+    """Route compose commands to the appropriate target."""
     if target == "playbook":
         return compose_playbook(kwargs["playbook"])
     elif target == "action":

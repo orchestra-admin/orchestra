@@ -41,7 +41,7 @@ def compose_action(description: str, name: str | None = None) -> COMPOSE_RESULT:
         return (
             False,
             None,
-            "local_actions/ not found. Run this command from an initialized Orchestra project.",
+            "local_actions/ not found. Run this from an initialized Orchestra project.",
             [],
         )
 
@@ -167,7 +167,10 @@ def compose_action(description: str, name: str | None = None) -> COMPOSE_RESULT:
         return (
             False,
             None,
-            f"Generated code failed validation after {MAX_RETRIES} attempts: {validation_error}",
+            (
+                f"Generated code failed validation after {MAX_RETRIES} "
+                f"attempts: {validation_error}"
+            ),
             [],
         )
 
@@ -180,7 +183,10 @@ def compose_action(description: str, name: str | None = None) -> COMPOSE_RESULT:
         return (
             False,
             None,
-            "Action output must include a # filename.py comment on the first line, or use --name.",
+            (
+                "Action output must include a # filename.py comment "
+                "on the first line, or use --name."
+            ),
             [],
         )
 

@@ -12,7 +12,7 @@ GET_SECRET_PATTERN = re.compile(r'get_secret\("([^"]+)"\)')
 
 
 def _extract_secret_keys(filepath: Path) -> list[str]:
-    """Scan a Python source file for get_secret("<KEY>") call and return the key names."""
+    """Scan a Python source file for get_secret("<KEY>") calls and return the keys."""
     keys = set()
     try:
         with open(filepath) as f:
@@ -86,11 +86,10 @@ def _get_docstring_from_ast(func_node: ast.FunctionDef | ast.AsyncFunctionDef) -
 def _build_func_index_from_dir(
     directory: Path, module_prefix: str, output_json_path: Path
 ) -> dict:
-    """Scan .py files in a directory and return a grouped dict index with module name as key.
+    """Scan .py files in a directory and return a grouped dict index.
 
-    Each module entry contains a secrets list extracted from get_secret() calls
-    and a functions list with signatures and docstrings for each public function.
-    Writes the resulting dict to disk at output_json_path.
+    Each entry contains a secrets list and functions with signatures
+    and docstrings. Writes the result to output_json_path.
     """
     if not directory.exists():
         return {}
@@ -162,7 +161,7 @@ def build_action_index(project_root: Path) -> dict:
 
 
 def build_integration_index(project_root: Path) -> dict:
-    """Build and merge built-in + local integration indexes into a single grouped dict."""
+    """Build and merge built-in + local integration indexes into a single dict."""
     local_base = project_root / "musicsheets" / "local_actions" / "local_integrations"
 
     integrations = _build_func_index_from_dir(

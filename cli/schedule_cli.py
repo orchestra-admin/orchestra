@@ -49,7 +49,8 @@ def add_schedule(event_type: str, cron_expr: str) -> None:
     """Add or update a cron schedule for the given event type."""
     if not croniter.is_valid(cron_expr):
         print(
-            f"Error: Invalid cron expression '{cron_expr}'. Must be a valid 5-field cron expression.",
+            f"Error: Invalid cron expression '{cron_expr}'. "
+            "Must be a valid 5-field cron expression.",
             file=sys.stderr,
         )
         sys.exit(1)

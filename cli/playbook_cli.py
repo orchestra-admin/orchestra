@@ -28,7 +28,8 @@ def deactivate_playbook(event_type: str) -> None:
 
     if not script_path.exists():
         print(
-            f"[!] Warning: No musicsheet found for '{event_type}', but writing to Redis anyway."
+            f"[!] Warning: No musicsheet found for '{event_type}', "
+            "but writing to Redis anyway."
         )
 
     if redis_client.sismember(DEACTIVATED_SET_KEY, event_type):
@@ -112,9 +113,8 @@ def run_playbook(event_type: str, payload: dict | None = None) -> None:
             f"[!] Playbook '{event_type}' timed out after {result['timeout_seconds']}s."
         )
     else:
-        print(
-            f"[!] Playbook '{event_type}' failed with exit code {result.get('returncode')}."
-        )
+        returncode = result.get("returncode")
+        print(f"[!] Playbook '{event_type}' failed with exit code {returncode}.")
 
 
 def review_playbook(playbook_path: str) -> None:

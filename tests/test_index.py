@@ -51,7 +51,7 @@ def test_build_action_index_does_not_mutate_sys_path(tmp_path: Path):
 
 
 def test_index_extracts_public_functions_signatures_and_docstrings(tmp_path: Path):
-    """Verify that public functions are indexed with correct signatures and docstrings."""
+    """Verify public functions are indexed with correct signatures and docstrings."""
     # Create directory structure
     local_actions = tmp_path / "musicsheets" / "local_actions"
     local_actions.mkdir(parents=True)

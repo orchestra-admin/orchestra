@@ -126,6 +126,7 @@ def llm_query(system_prompt: str, user_prompt: str) -> str:
             return _gemini_query(system_prompt, user_prompt, model, api_key)
         except ImportError:
             raise OrchestraError(
-                f"The 'google-generativeai' package is required for the Gemini provider. "
+                f"The 'google-generativeai' package is required for the "
+                f"Gemini provider. "
                 f"Install it with: {provider_info['install_hint']}"
             ) from None

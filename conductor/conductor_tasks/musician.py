@@ -184,7 +184,7 @@ def process_raw_job(
     project_root: Path | None = None,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict:
-    """Process a raw job through validation, deactivation check, execution, and DLQ handling."""
+    """Process a raw job: validate, check deactivation, execute, handle DLQ."""
     try:
         job = parse_job(raw_job)
     except ValueError as exc:

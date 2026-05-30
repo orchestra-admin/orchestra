@@ -43,7 +43,7 @@ def compose_integration(description: str, name: str | None = None) -> COMPOSE_RE
         return (
             False,
             None,
-            "local_actions/ not found. Run this command from an initialized Orchestra project.",
+            "local_actions/ not found. Run this from an initialized Orchestra project.",
             [],
         )
 
@@ -144,7 +144,10 @@ def compose_integration(description: str, name: str | None = None) -> COMPOSE_RE
         return (
             False,
             None,
-            f"Generated code failed validation after {MAX_RETRIES} attempts: {validation_error}",
+            (
+                f"Generated code failed validation after {MAX_RETRIES} "
+                f"attempts: {validation_error}"
+            ),
             [],
         )
 
@@ -157,7 +160,10 @@ def compose_integration(description: str, name: str | None = None) -> COMPOSE_RE
         return (
             False,
             None,
-            "Integration output must include a # filename.py comment on the first line, or use --name.",
+            (
+                "Integration output must include a # filename.py "
+                "comment on the first line, or use --name."
+            ),
             [],
         )
 

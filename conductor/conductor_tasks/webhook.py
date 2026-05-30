@@ -42,7 +42,9 @@ def get_webhook_secret() -> str:
     try:
         return get_secret("WEBHOOK_SECRET")
     except KeyError:
-        raise RuntimeError("WEBHOOK_SECRET is required to run the Orchestra server.") from None
+        raise RuntimeError(
+            "WEBHOOK_SECRET is required to run the Orchestra server."
+        ) from None
 
 
 def get_signature_header(headers) -> str | None:
@@ -68,7 +70,7 @@ def is_valid_signature(raw_body: bytes, signature: str | None, secret: str) -> b
 
 
 def create_webhook_app():
-    """Create and return a FastAPI webhook app with signature verification and Redis enqueuing."""
+    """Create a FastAPI webhook app with signature verification and Redis enqueuing."""
     modules = load_server_modules()
     FastAPI = modules["FastAPI"]
     HTTPException = modules["HTTPException"]

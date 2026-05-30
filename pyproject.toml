@@ -19,6 +19,10 @@ dependencies = [
 [project.optional-dependencies]
 anthropic = ["anthropic"]
 gemini = ["google-generativeai"]
+test = [
+  "pytest",
+  "pytest-cov",
+]
 
 [project.scripts]
 orchestra = "orchestra:main"
@@ -42,4 +46,10 @@ orchestra_core = [
   "init_assets/musicsheets/local_actions/*",
   "init_assets/musicsheets/local_actions/local_integrations/*",
   "init_assets/logs/orchestra.log",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "integration: slower smoke tests that may require package install, Docker, or subprocess CLI execution",
 ]

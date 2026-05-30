@@ -43,7 +43,7 @@ def _write_action(base_dir: Path, relative_path: str, code: str) -> None:
         raise ValueError(
             f"Invalid action filename '{relative_path}': path escapes base directory or has traversal characters"
         ) from None
-        
+
     target.parent.mkdir(parents=True, exist_ok=True)
     code = code.strip() + "\n"
 

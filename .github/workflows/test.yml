@@ -25,8 +25,8 @@ jobs:
       - name: Run Ruff linter
         run: ruff check .
 
-      - name: Run Black formatter check
-        run: black --check .
+      - name: Run Ruff formatter check
+        run: ruff format --check .
 
   unit:
     needs: lint

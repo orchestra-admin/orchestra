@@ -99,8 +99,7 @@ def llm_query(system_prompt: str, user_prompt: str) -> str:
         api_key = get_secret(secret_key)
     except KeyError:
         raise OrchestraError(
-            f"Secret '{secret_key}' not found. "
-            f"Set it in your environment or .env file."
+            f"Secret '{secret_key}' not found. Set it in your environment or .env file."
         ) from None
 
     if provider == "openai":

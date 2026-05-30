@@ -74,9 +74,12 @@ def _get_docstring_from_ast(func_node: ast.FunctionDef | ast.AsyncFunctionDef) -
     if not func_node.body:
         return ""
     first_stmt = func_node.body[0]
-    if isinstance(first_stmt, ast.Expr) and isinstance(first_stmt.value, ast.Constant):
-        if isinstance(first_stmt.value.value, str):
-            return first_stmt.value.value
+    if (
+        isinstance(first_stmt, ast.Expr)
+        and isinstance(first_stmt.value, ast.Constant)
+        and isinstance(first_stmt.value.value, str)
+    ):
+        return first_stmt.value.value
     return ""
 
 

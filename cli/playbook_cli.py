@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from composer_agent.composer_tasks.review import review_playbook as _review_playbook
 from conductor.conductor_tasks.musician import build_queue_job, execute_job
@@ -9,6 +10,9 @@ from orchestra_core.config import (
 )
 from orchestra_core.exceptions import OrchestraError
 from orchestra_core.redis import get_redis_client
+
+if TYPE_CHECKING:
+    import redis
 
 
 def is_playbook_deactivated(redis_client: "redis.Redis", event_type: str) -> bool:

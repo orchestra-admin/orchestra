@@ -9,6 +9,7 @@ class JsonFormatter(logging.Formatter):
     """Format log records as single-line JSON documents."""
 
     def format(self, record: logging.LogRecord) -> str:
+        """Convert a log record to a JSON string."""
         payload = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,

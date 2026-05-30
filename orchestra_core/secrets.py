@@ -95,7 +95,7 @@ def _get_secret_aws_ssm(key: str) -> str:
         raise ImportError(
             "boto3 is required for the 'aws_ssm' secrets backend. "
             "Install it with: pip install orchestra[aws]"
-        )
+        ) from None
 
     config = _load_secrets_config()
     ssm_config = config["backend_configs"].get("aws_ssm", {})
@@ -115,7 +115,7 @@ def _get_secret_aws_ssm(key: str) -> str:
         raise KeyError(
             f"Secret '{key}' not found in AWS SSM at parameter name '{full_key}' "
             f"(region: {region}). Make sure the parameter exists."
-        )
+        ) from None
 
     return response["Parameter"]["Value"]
 

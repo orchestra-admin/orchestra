@@ -101,7 +101,7 @@ def llm_query(system_prompt: str, user_prompt: str) -> str:
         raise OrchestraError(
             f"Secret '{secret_key}' not found. "
             f"Set it in your environment or .env file."
-        )
+        ) from None
 
     if provider == "openai":
         try:
@@ -110,7 +110,7 @@ def llm_query(system_prompt: str, user_prompt: str) -> str:
             raise OrchestraError(
                 f"The 'openai' package is required for the OpenAI provider. "
                 f"Install it with: {provider_info['install_hint']}"
-            )
+            ) from None
 
     if provider == "anthropic":
         try:
@@ -119,7 +119,7 @@ def llm_query(system_prompt: str, user_prompt: str) -> str:
             raise OrchestraError(
                 f"The 'anthropic' package is required for the Anthropic provider. "
                 f"Install it with: {provider_info['install_hint']}"
-            )
+            ) from None
 
     if provider == "gemini":
         try:
@@ -128,4 +128,4 @@ def llm_query(system_prompt: str, user_prompt: str) -> str:
             raise OrchestraError(
                 f"The 'google-generativeai' package is required for the Gemini provider. "
                 f"Install it with: {provider_info['install_hint']}"
-            )
+            ) from None

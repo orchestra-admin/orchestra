@@ -42,7 +42,7 @@ def get_webhook_secret() -> str:
     try:
         return get_secret("WEBHOOK_SECRET")
     except KeyError:
-        raise RuntimeError("WEBHOOK_SECRET is required to run the Orchestra server.")
+        raise RuntimeError("WEBHOOK_SECRET is required to run the Orchestra server.") from None
 
 
 def get_signature_header(headers) -> str | None:

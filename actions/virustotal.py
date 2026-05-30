@@ -40,7 +40,7 @@ def lookup_ip(ip: str) -> dict:
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.load(resp).get("data", {})
     except urllib.error.URLError:
-        raise Exception("VirusTotal API request failed")
+        raise Exception("VirusTotal API request failed") from None
 
     attributes = data.get("attributes", {})
     stats = attributes.get("last_analysis_stats", {})

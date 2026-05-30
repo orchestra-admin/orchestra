@@ -1,4 +1,9 @@
+from typing import TYPE_CHECKING
+
 from orchestra_core.config import get_project_root, load_musician_config
+
+if TYPE_CHECKING:
+    import redis
 
 
 def get_redis_client() -> "redis.Redis":

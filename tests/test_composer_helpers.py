@@ -25,19 +25,19 @@ def test_write_action_appends_to_existing_file(tmp_path: Path):
 
 def test_write_action_rejects_dotdot_slash(tmp_path: Path):
     """_write_action rejects ../x.py."""
-    with pytest.raises(ValueError, match="must be a simple .py stem"):
+    with pytest.raises(ValueError, match="path escapes base directory or has traversal characters"):
         _write_action(tmp_path, "../escape.py", "def evil(): pass")
 
 
 def test_write_action_rejects_nested_paths(tmp_path: Path):
     """_write_action rejects nested/x.py."""
-    with pytest.raises(ValueError, match="must be a simple .py stem"):
+    with pytest.raises(ValueError, match="path escapes base directory or has traversal characters"):
         _write_action(tmp_path, "nested/file.py", "def evil(): pass")
 
 
 def test_write_action_rejects_backslash_paths(tmp_path: Path):
     """_write_action rejects nested\\x.py."""
-    with pytest.raises(ValueError, match="must be a simple .py stem"):
+    with pytest.raises(ValueError, match="path escapes base directory or has traversal characters"):
         _write_action(tmp_path, "nested\\file.py", "def evil(): pass")
 
 

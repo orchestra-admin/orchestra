@@ -10,12 +10,12 @@ from orchestra_core.config import (
     DEACTIVATED_SET_KEY,
     DEFAULT_DLQ_KEY,
     DEFAULT_TIMEOUT_SECONDS,
-    EVENT_TYPE_PATTERN,
     get_project_root,
     load_musician_config,
 )
 from orchestra_core.logging import setup_logging
 from orchestra_core.redis import get_redis_client
+from orchestra_core.validators import safe_child_path, validate_event_type
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +53,7 @@ def build_queue_job(
 ) -> dict:
     """Build a job dictionary from a payload with source metadata for enqueuing."""
     event_type = payload.get("event_type")
-    if not isinstance(event_type, str) or not event_type:
-        raise ValueError("Payload must include a non-empty string field 'event_type'.")
-    if not EVENT_TYPE_PATTERN.match(event_type):
-        raise ValueError(
-            f"Payload event_type '{event_type}' contains invalid characters. "
-            f"Only alphanumeric characters, underscores, hyphens, and dots are allowed."
-        )
+    validate_event_type(event_type)
 
     job_metadata = {
         "source": source,
@@ -86,14 +80,12 @@ def enqueue_job(redis_client, queue_key: str, job: dict) -> None:
 def resolve_script_path(project_root: Path, event_type: str) -> Path:
     """Resolve the musicsheet script file path for a given event type."""
     musicsheets_dir = (project_root / "musicsheets").resolve()
-    script_path = (musicsheets_dir / f"{event_type}.py").resolve()
     try:
-        script_path.relative_to(musicsheets_dir)
+        return safe_child_path(musicsheets_dir, f"{event_type}.py")
     except ValueError:
         raise ValueError(
             f"Invalid event_type '{event_type}': path escapes musicsheets/ directory"
         ) from None
-    return script_path
 
 
 def execute_job(

@@ -2,6 +2,8 @@ import json
 import re
 from pathlib import Path
 
+from orchestra_core.validators import safe_child_path
+
 MAX_RETRIES = 3
 
 COMPOSE_RESULT = tuple[bool, str | None, str | None, list[str]]
@@ -30,22 +32,18 @@ def _validate_python(code: str, label: str = "<composer_output>") -> str | None:
 
 
 def _write_action(base_dir: Path, relative_path: str, code: str) -> None:
-    if ".." in relative_path or "/" in relative_path or "\\" in relative_path:
-        raise ValueError(
-            f"Invalid action filename '{relative_path}': must be a simple .py stem"
-        )
     if not relative_path.endswith(".py"):
         raise ValueError(
             f"Invalid action filename '{relative_path}': must end with .py"
         )
 
-    target = (base_dir / relative_path).resolve()
     try:
-        target.relative_to(base_dir.resolve())
+        target = safe_child_path(base_dir, relative_path)
     except ValueError:
         raise ValueError(
-            f"Invalid action filename '{relative_path}': path escapes base directory"
+            f"Invalid action filename '{relative_path}': path escapes base directory or has traversal characters"
         ) from None
+        
     target.parent.mkdir(parents=True, exist_ok=True)
     code = code.strip() + "\n"
 

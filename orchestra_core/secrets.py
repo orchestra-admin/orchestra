@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from orchestra_core.config import get_project_root, load_project_config
+from orchestra_core.validators import validate_secret_key_name
 
 logger = logging.getLogger(__name__)
 
@@ -66,13 +67,8 @@ def _get_secret_env(key: str) -> str:
     )
 
 
-def _validate_secret_key_name(key: str) -> None:
-    if "/" in key or "\\" in key or ".." in key:
-        raise ValueError(f"Invalid secret key name: {key}")
-
-
 def _get_secret_docker_secrets(key: str) -> str:
-    _validate_secret_key_name(key)
+    validate_secret_key_name(key)
     config = _load_secrets_config()
     docker_config = config["backend_configs"].get("docker_secrets", {})
     secrets_path = Path(docker_config.get("path", "/run/secrets"))
@@ -146,7 +142,7 @@ def _set_secret_aws_ssm(key: str, value: str) -> None:
 
 
 def _set_secret_docker_secrets(key: str, value: str) -> None:
-    _validate_secret_key_name(key)
+    validate_secret_key_name(key)
     config = _load_secrets_config()
     docker_config = config.get("backend_configs", {}).get("docker_secrets", {})
     secrets_path = Path(docker_config.get("path", "/run/secrets"))

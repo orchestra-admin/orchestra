@@ -42,16 +42,31 @@ logger.info("musician.job.completed", extra={"data": {...}})
 print(f"[+] Output written to {path}")
 ```
 
-### Return tuples from service layer
+### Return typed result objects from service layer
 
-Pure functions return `(success: bool, path: str | None, error: str | None)`. Never `sys.exit()`.
+Pure functions return small frozen dataclasses (e.g. `ComposeResult`, `ExecutionResult`). Never `sys.exit()` from service code.
 
 ```python
 # RIGHT:
-def compose_playbook(playbook_path) -> tuple[bool, str | None, str | None]:
+@dataclass(frozen=True, slots=True)
+class ComposeResult:
+    ok: bool
+    path: str | None = None
+    error: str | None = None
+    new_keys: list[str] = field(default_factory=list)
+
+def compose_playbook(playbook_path) -> ComposeResult:
     ...
-    return (True, str(output_path), None)
+    return ComposeResult(ok=True, path=str(output_path))
 ```
+
+**Why dataclasses over tuples:**
+- Named fields (`result.ok`, `result.error`) instead of positional (`result[0]`, `result[2]`)
+- Adding a new field with a default is non-breaking
+- Type checking and IDE autocomplete work out of the box
+- Immutable by default (`frozen=True`), memory efficient (`slots=True`)
+
+**Why not `sys.exit()`:** Service code may be imported by a web UI, Discord bot, or test runner. Exiting the process from a library function is hostile. Let the CLI layer (`cli/`) handle exit codes.
 
 ### Docstrings
 
@@ -95,6 +110,7 @@ No over-engineering. Implement the simplest thing that satisfies the requirement
 
 - Work incrementally — implement one step of the plan at a time, not the entire plan in one pass.
 - If a task is complex, break it into smaller sub-tasks and complete each before moving on.
+- DO NOT START WRITING CODE UNLESS EXPLICITLY TOLD TO EVEN IF IN BUILD MODE.
 
 ---
 

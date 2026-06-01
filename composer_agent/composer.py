@@ -9,8 +9,8 @@ from composer_agent.composer_tasks.compose_integration import (
     compose_integration as _compose_integration,
 )
 from composer_agent.composer_tasks.composer_helpers import (
-    COMPOSE_RESULT,
     MAX_RETRIES,
+    ComposeResult,
     _format_actions,
     _read_index,
     _read_integration_index,
@@ -49,18 +49,19 @@ def _parse_output(raw: str) -> tuple[dict[str, str], str]:
 
 def compose_playbook(
     playbook_path: str | Path, output_path: str | Path | None = None
-) -> COMPOSE_RESULT:
+) -> ComposeResult:
     """Convert a playbook markdown file into an executable musicsheet script."""
     project_root = get_project_root()
     playbook_path = Path(playbook_path)
     musicsheets_dir = project_root / "musicsheets"
 
     if not musicsheets_dir.is_dir():
-        return (
-            False,
-            None,
-            "musicsheets/ not found. Run this from an initialized Orchestra project.",
-            [],
+        return ComposeResult(
+            ok=False,
+            error=(
+                "musicsheets/ not found. Run this from an initialized "
+                "Orchestra project."
+            ),
         )
 
     build_action_index(project_root)
@@ -150,7 +151,7 @@ def compose_playbook(
                 try:
                     _write_action(local_actions_dir, filename, action_code)
                 except ValueError as e:
-                    return (False, None, str(e), [])
+                    return ComposeResult(ok=False, error=str(e))
             with open(output_path, "w") as f:
                 f.write(script)
             break
@@ -174,8 +175,21 @@ def compose_playbook(
         logger.error(
             "compose.llm.failed_validation",
             extra={
-                "data": {"error": validation_error, "output_path": str(output_path)}
+                "data": {
+                    "error": validation_error,
+                    "output_path": str(output_path),
+                }
             },
+        )
+        draft_path = output_path.with_suffix(".draft.py")
+        with open(draft_path, "w") as f:
+            f.write(script)
+        return ComposeResult(
+            ok=False,
+            error=(
+                f"Generated code failed validation after {MAX_RETRIES} "
+                f"attempts: {validation_error}. Draft written to {draft_path}"
+            ),
         )
         draft_path = output_path.with_suffix(".draft.py")
         with open(draft_path, "w") as f:
@@ -194,10 +208,10 @@ def compose_playbook(
     integrations = build_integration_index(project_root)
     new_keys = sync_env_keys(integrations)
 
-    return (True, str(output_path), None, new_keys)
+    return ComposeResult(ok=True, path=str(output_path), new_keys=new_keys)
 
 
-def compose(target: str, **kwargs) -> COMPOSE_RESULT:
+def compose(target: str, **kwargs) -> ComposeResult:
     """Route compose commands to the appropriate target."""
     if target == "playbook":
         return compose_playbook(kwargs["playbook"])
@@ -206,4 +220,4 @@ def compose(target: str, **kwargs) -> COMPOSE_RESULT:
     elif target == "integration":
         return _compose_integration(kwargs["description"], kwargs.get("name"))
     else:
-        return (False, None, f"Unknown compose target '{target}'.", [])
+        return ComposeResult(ok=False, error=f"Unknown compose target '{target}'.")

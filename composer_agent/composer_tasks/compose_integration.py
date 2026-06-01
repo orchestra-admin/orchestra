@@ -3,8 +3,8 @@ import re
 from pathlib import Path
 
 from composer_agent.composer_tasks.composer_helpers import (
-    COMPOSE_RESULT,
     MAX_RETRIES,
+    ComposeResult,
     _format_actions,
     _read_integration_index,
     _strip_markdown_fences,
@@ -32,7 +32,7 @@ def _strip_name_line(code: str) -> str:
     return NAME_PATTERN.sub("", code.strip(), count=1).strip() + "\n"
 
 
-def compose_integration(description: str, name: str | None = None) -> COMPOSE_RESULT:
+def compose_integration(description: str, name: str | None = None) -> ComposeResult:
     """Generate an integration Python module from a natural language description."""
     project_root = get_project_root()
     local_integrations_dir = (
@@ -40,11 +40,12 @@ def compose_integration(description: str, name: str | None = None) -> COMPOSE_RE
     )
 
     if not local_integrations_dir.parent.exists():
-        return (
-            False,
-            None,
-            "local_actions/ not found. Run this from an initialized Orchestra project.",
-            [],
+        return ComposeResult(
+            ok=False,
+            error=(
+                "local_actions/ not found. Run this from an initialized "
+                "Orchestra project."
+            ),
         )
 
     build_action_index(project_root)
@@ -141,30 +142,26 @@ def compose_integration(description: str, name: str | None = None) -> COMPOSE_RE
         logger.error(
             "compose.llm.failed_validation", extra={"data": {"error": validation_error}}
         )
-        return (
-            False,
-            None,
-            (
+        return ComposeResult(
+            ok=False,
+            error=(
                 f"Generated code failed validation after {MAX_RETRIES} "
                 f"attempts: {validation_error}"
             ),
-            [],
         )
 
     if code.strip().startswith("# SKIP"):
         skip_msg = code.strip().splitlines()[0]
-        return (True, None, skip_msg, [])
+        return ComposeResult(ok=True, error=skip_msg)
 
     filename = name or _parse_name(code)
     if not filename:
-        return (
-            False,
-            None,
-            (
+        return ComposeResult(
+            ok=False,
+            error=(
                 "Integration output must include a # filename.py "
                 "comment on the first line, or use --name."
             ),
-            [],
         )
 
     code = _strip_name_line(code)
@@ -172,9 +169,11 @@ def compose_integration(description: str, name: str | None = None) -> COMPOSE_RE
     try:
         _write_action(local_integrations_dir, filename, code)
     except ValueError as e:
-        return (False, None, str(e), [])
+        return ComposeResult(ok=False, error=str(e))
 
     integrations = build_integration_index(project_root)
     new_keys = sync_env_keys(integrations)
 
-    return (True, str(local_integrations_dir / filename), None, new_keys)
+    return ComposeResult(
+        ok=True, path=str(local_integrations_dir / filename), new_keys=new_keys
+    )

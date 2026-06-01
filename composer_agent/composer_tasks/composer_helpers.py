@@ -1,12 +1,21 @@
 import json
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from orchestra_core.validators import safe_child_path
 
 MAX_RETRIES = 3
 
-COMPOSE_RESULT = tuple[bool, str | None, str | None, list[str]]
+
+@dataclass(frozen=True, slots=True)
+class ComposeResult:
+    """Result of a compose operation (playbook, action, or integration)."""
+
+    ok: bool
+    path: str | None = None
+    error: str | None = None
+    new_keys: list[str] = field(default_factory=list)
 
 
 def _strip_markdown_fences(text: str) -> str:
@@ -41,7 +50,8 @@ def _write_action(base_dir: Path, relative_path: str, code: str) -> None:
         target = safe_child_path(base_dir, relative_path)
     except ValueError:
         raise ValueError(
-            f"Invalid action filename '{relative_path}': path escapes base directory or has traversal characters"
+            f"Invalid action filename '{relative_path}': "
+            "path escapes base directory or has traversal characters"
         ) from None
 
     target.parent.mkdir(parents=True, exist_ok=True)

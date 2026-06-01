@@ -4,6 +4,7 @@ import subprocess
 import sys
 import time
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
 
 from orchestra_core.config import (
@@ -18,6 +19,29 @@ from orchestra_core.redis import get_redis_client
 from orchestra_core.validators import safe_child_path, validate_event_type
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionResult:
+    """Result of executing a musicsheet script or processing a job.
+
+    The status field discriminates which optional fields are populated:
+    - "success"/"failed": returncode, stdout, stderr
+    - "timeout": stdout, stderr, timeout_seconds
+    - "missing_script": only event_type, script_path
+    - "playbook_deactivated": event_type, failure_reason
+    - "invalid_job"/"invalid": error
+    """
+
+    status: str
+    event_type: str | None = None
+    script_path: str | None = None
+    returncode: int | None = None
+    stdout: str = ""
+    stderr: str = ""
+    timeout_seconds: int | None = None
+    error: str | None = None
+    failure_reason: str | None = None
 
 
 def parse_job(raw_job: str) -> dict:
@@ -92,17 +116,17 @@ def execute_job(
     job: dict,
     project_root: Path | None = None,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
-) -> dict:
+) -> ExecutionResult:
     """Execute a job's musicsheet script as a subprocess and return the result."""
     project_root = project_root or get_project_root()
     script_path = resolve_script_path(project_root, job["event_type"])
 
     if not script_path.exists():
-        return {
-            "status": "missing_script",
-            "event_type": job["event_type"],
-            "script_path": str(script_path),
-        }
+        return ExecutionResult(
+            status="missing_script",
+            event_type=job["event_type"],
+            script_path=str(script_path),
+        )
 
     payload_json = json.dumps(job["payload"])
 
@@ -117,32 +141,34 @@ def execute_job(
         )
     except subprocess.TimeoutExpired as exc:
         MAX_OUTPUT_CHARS = 500
-        return {
-            "status": "timeout",
-            "event_type": job["event_type"],
-            "script_path": str(script_path),
-            "stdout": (exc.stdout or "")[:MAX_OUTPUT_CHARS],
-            "stderr": (exc.stderr or "")[:MAX_OUTPUT_CHARS],
-            "timeout_seconds": timeout_seconds,
-        }
+        return ExecutionResult(
+            status="timeout",
+            event_type=job["event_type"],
+            script_path=str(script_path),
+            stdout=(exc.stdout or "")[:MAX_OUTPUT_CHARS],
+            stderr=(exc.stderr or "")[:MAX_OUTPUT_CHARS],
+            timeout_seconds=timeout_seconds,
+        )
 
     status = "success" if result.returncode == 0 else "failed"
     MAX_OUTPUT_CHARS = 500
-    return {
-        "status": status,
-        "event_type": job["event_type"],
-        "script_path": str(script_path),
-        "returncode": result.returncode,
-        "stdout": result.stdout[:MAX_OUTPUT_CHARS] if result.stdout else "",
-        "stderr": result.stderr[:MAX_OUTPUT_CHARS] if result.stderr else "",
-    }
+    return ExecutionResult(
+        status=status,
+        event_type=job["event_type"],
+        script_path=str(script_path),
+        returncode=result.returncode,
+        stdout=result.stdout[:MAX_OUTPUT_CHARS] if result.stdout else "",
+        stderr=result.stderr[:MAX_OUTPUT_CHARS] if result.stderr else "",
+    )
 
 
-def push_dlq_record(redis_client, dlq_key: str, raw_job: str, result: dict) -> None:
+def push_dlq_record(
+    redis_client, dlq_key: str, raw_job: str, result: ExecutionResult
+) -> None:
     """Record a failed job and its result to the dead letter queue in Redis.
 
     Strips the payload from raw_job to avoid storing sensitive data.
-    Removes stdout/stderr from the result dict.
+    Removes stdout/stderr from the result before storing.
     """
     safe_job = '{"invalid": true}'
     job_id = None
@@ -158,7 +184,15 @@ def push_dlq_record(redis_client, dlq_key: str, raw_job: str, result: dict) -> N
         )
     except Exception:
         pass
-    safe_result = {k: v for k, v in result.items() if k not in ("stdout", "stderr")}
+    safe_result = {
+        "status": result.status,
+        "event_type": result.event_type,
+        "script_path": result.script_path,
+        "returncode": result.returncode,
+        "timeout_seconds": result.timeout_seconds,
+        "error": result.error,
+        "failure_reason": result.failure_reason,
+    }
     record = {
         "raw_job": safe_job,
         "result": safe_result,
@@ -175,25 +209,22 @@ def process_raw_job(
     dlq_key: str = DEFAULT_DLQ_KEY,
     project_root: Path | None = None,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
-) -> dict:
+) -> ExecutionResult:
     """Process a raw job: validate, check deactivation, execute, handle DLQ."""
     try:
         job = parse_job(raw_job)
     except ValueError as exc:
-        result = {
-            "status": "invalid_job",
-            "error": str(exc),
-        }
+        result = ExecutionResult(status="invalid_job", error=str(exc))
         push_dlq_record(redis_client, dlq_key, raw_job, result)
         logger.error("musician.job.invalid", extra={"data": {"error": str(exc)}})
         return result
 
     if redis_client.sismember(DEACTIVATED_SET_KEY, job["event_type"]):
-        result = {
-            "status": "playbook_deactivated",
-            "event_type": job["event_type"],
-            "failure_reason": "playbook_deactivated",
-        }
+        result = ExecutionResult(
+            status="playbook_deactivated",
+            event_type=job["event_type"],
+            failure_reason="playbook_deactivated",
+        )
         push_dlq_record(redis_client, dlq_key, raw_job, result)
         logger.info(
             "musician.job.skipped_deactivated",
@@ -208,14 +239,14 @@ def process_raw_job(
             job, project_root=project_root, timeout_seconds=timeout_seconds
         )
     except ValueError as exc:
-        result = {"status": "invalid", "error": str(exc)}
+        result = ExecutionResult(status="invalid", error=str(exc))
         push_dlq_record(redis_client, dlq_key, raw_job, result)
         logger.error(
             "musician.job.invalid",
             extra={"data": {"job_id": job.get("job_id"), "error": str(exc)}},
         )
         return result
-    status = result["status"]
+    status = result.status
 
     if status == "success":
         logger.info(
@@ -225,7 +256,7 @@ def process_raw_job(
                     "job_id": job.get("job_id"),
                     "event_type": job["event_type"],
                     "source": job.get("metadata", {}).get("source"),
-                    "returncode": result.get("returncode"),
+                    "returncode": result.returncode,
                 }
             },
         )

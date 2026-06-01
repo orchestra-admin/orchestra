@@ -97,23 +97,25 @@ def run_playbook(event_type: str, payload: dict | None = None) -> None:
 
     print(f"[*] Running playbook '{event_type}' manually...")
     result = execute_job(job)
-    status = result["status"]
 
-    if result.get("stdout"):
-        print(result["stdout"], end="")
-    if result.get("stderr"):
-        print(result["stderr"], end="", file=sys.stderr)
+    if result.stdout:
+        print(result.stdout, end="")
+    if result.stderr:
+        print(result.stderr, end="", file=sys.stderr)
 
-    if status == "success":
+    if result.status == "success":
         print(f"[+] Playbook '{event_type}' completed successfully.")
-    elif status == "missing_script":
-        print(f"[!] No musicsheet found for '{event_type}' at {result['script_path']}")
-    elif status == "timeout":
+    elif result.status == "missing_script":
         print(
-            f"[!] Playbook '{event_type}' timed out after {result['timeout_seconds']}s."
+            f"[!] No musicsheet found for '{event_type}' at {result.script_path}"
+        )
+    elif result.status == "timeout":
+        print(
+            f"[!] Playbook '{event_type}' timed out after "
+            f"{result.timeout_seconds}s."
         )
     else:
-        returncode = result.get("returncode")
+        returncode = result.returncode
         print(f"[!] Playbook '{event_type}' failed with exit code {returncode}.")
 
 

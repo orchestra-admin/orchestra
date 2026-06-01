@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from conductor.conductor_tasks.musician import (
+    ExecutionResult,
     build_queue_job,
     execute_job,
     parse_job,
@@ -223,8 +224,8 @@ def test_execute_job_missing_script(tmp_path: Path):
     job = {"event_type": "nonexistent", "payload": {}}
     result = execute_job(job, project_root=tmp_path)
 
-    assert result["status"] == "missing_script"
-    assert result["event_type"] == "nonexistent"
+    assert result.status == "missing_script"
+    assert result.event_type == "nonexistent"
 
 
 def test_execute_job_success(tmp_path: Path):
@@ -238,9 +239,9 @@ def test_execute_job_success(tmp_path: Path):
     job = {"event_type": "success", "payload": {}}
     result = execute_job(job, project_root=tmp_path)
 
-    assert result["status"] == "success"
-    assert result["returncode"] == 0
-    assert "hello" in result["stdout"]
+    assert result.status == "success"
+    assert result.returncode == 0
+    assert "hello" in result.stdout
 
 
 def test_execute_job_failed(tmp_path: Path):
@@ -254,8 +255,8 @@ def test_execute_job_failed(tmp_path: Path):
     job = {"event_type": "fail", "payload": {}}
     result = execute_job(job, project_root=tmp_path)
 
-    assert result["status"] == "failed"
-    assert result["returncode"] == 1
+    assert result.status == "failed"
+    assert result.returncode == 1
 
 
 def test_execute_job_timeout(tmp_path: Path):
@@ -269,8 +270,8 @@ def test_execute_job_timeout(tmp_path: Path):
     job = {"event_type": "slow", "payload": {}}
     result = execute_job(job, project_root=tmp_path, timeout_seconds=1)
 
-    assert result["status"] == "timeout"
-    assert result["timeout_seconds"] == 1
+    assert result.status == "timeout"
+    assert result.timeout_seconds == 1
 
 
 def test_execute_job_passes_payload_via_stdin(tmp_path: Path):
@@ -284,8 +285,8 @@ def test_execute_job_passes_payload_via_stdin(tmp_path: Path):
     job = {"event_type": "echo_payload", "payload": {"key": "value"}}
     result = execute_job(job, project_root=tmp_path)
 
-    assert result["status"] == "success"
-    assert '"key": "value"' in result["stdout"]
+    assert result.status == "success"
+    assert '"key": "value"' in result.stdout
 
 
 # push_dlq_record tests
@@ -302,12 +303,12 @@ def test_push_dlq_record_excludes_raw_payload():
             "metadata": {"source": "webhook"},
         }
     )
-    result = {
-        "status": "failed",
-        "returncode": 1,
-        "stdout": "output",
-        "stderr": "error",
-    }
+    result = ExecutionResult(
+        status="failed",
+        returncode=1,
+        stdout="output",
+        stderr="error",
+    )
 
     push_dlq_record(fake, "orchestra:dlq", raw_job, result)
 
@@ -331,12 +332,12 @@ def test_push_dlq_record_excludes_stdout_stderr():
     raw_job = json.dumps(
         {"job_id": "abc123", "event_type": "test", "payload": {}, "metadata": {}}
     )
-    result = {
-        "status": "failed",
-        "returncode": 1,
-        "stdout": "sensitive output",
-        "stderr": "error details",
-    }
+    result = ExecutionResult(
+        status="failed",
+        returncode=1,
+        stdout="sensitive output",
+        stderr="error details",
+    )
 
     push_dlq_record(fake, "orchestra:dlq", raw_job, result)
 
@@ -358,7 +359,7 @@ def test_push_dlq_record_includes_required_fields():
             "metadata": {"source": "webhook", "received_at": 1234567890},
         }
     )
-    result = {"status": "failed", "returncode": 1}
+    result = ExecutionResult(status="failed", returncode=1)
 
     push_dlq_record(fake, "orchestra:dlq", raw_job, result)
 
@@ -376,7 +377,7 @@ def test_push_dlq_record_handles_invalid_json():
     """push_dlq_record handles invalid JSON gracefully."""
     fake = FakeRedis()
     raw_job = "not valid json"
-    result = {"status": "invalid_job", "error": "parse error"}
+    result = ExecutionResult(status="invalid_job", error="parse error")
 
     push_dlq_record(fake, "orchestra:dlq", raw_job, result)
 

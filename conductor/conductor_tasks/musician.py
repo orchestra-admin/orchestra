@@ -15,6 +15,7 @@ from orchestra_core.config import (
     load_musician_config,
 )
 from orchestra_core.logging import setup_logging
+from orchestra_core.playbook_state import sync_deactivated_playbooks
 from orchestra_core.redis import get_redis_client
 from orchestra_core.validators import safe_child_path, validate_event_type
 
@@ -298,6 +299,12 @@ def run_musician() -> int:
 
     redis_client = get_redis_client()
     redis_client.ping()
+
+    deactivated = sync_deactivated_playbooks(redis_client, project_root)
+    logger.info(
+        "playbook.deactivation.synced",
+        extra={"data": {"count": len(deactivated), "role": "musician"}},
+    )
 
     logger.info(
         "musician.started",

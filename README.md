@@ -228,6 +228,34 @@ Defaults: webhook 24h, scheduler 2min. Omit the `dedupe` section to use defaults
 
 <br>
 
+## Failed Jobs
+
+Inspect and manage jobs that failed during execution:
+
+```bash
+# List failed jobs (compact table)
+orchestra jobs failed list
+
+# Show one failed job (by index or job_id)
+orchestra jobs failed show 0
+orchestra jobs failed show abc123
+
+# Replay a failed job if its original payload is available
+orchestra jobs failed replay 0
+
+# Purge all failed job records (requires explicit confirmation)
+orchestra jobs failed purge --yes
+
+# Export failed jobs as JSON
+orchestra jobs failed export --output failed_jobs.json
+```
+
+**Replay limitation:** Failed job records are sanitized by default — the original webhook payload is not retained. Most failed jobs will refuse to replay with a clear error message. A future feature that stores a `replay_job` field in DLQ records would enable replay for sanitized records; this is currently out of scope.
+
+This is a deliberate security choice: failed-job storage is operator-visible and audit-friendly, while still avoiding retention of sensitive payload data.
+
+<br>
+
 ## Configuration
 
 Runtime config lives at `.local_config/orchestra.json`:

@@ -1,6 +1,6 @@
+import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from composer_agent.composer_tasks.review import review_playbook as _review_playbook
 from conductor.conductor_tasks.musician import build_queue_job, execute_job
@@ -9,46 +9,69 @@ from orchestra_core.config import (
     get_project_root,
 )
 from orchestra_core.exceptions import OrchestraError
+from orchestra_core.playbook_state import (
+    activate_playbook_state,
+    deactivate_playbook_state,
+    load_deactivated_playbooks,
+)
 from orchestra_core.redis import get_redis_client
 
-if TYPE_CHECKING:
-    import redis
+logger = logging.getLogger(__name__)
 
 
-def is_playbook_deactivated(redis_client: "redis.Redis", event_type: str) -> bool:
-    """Check whether a playbook is currently deactivated in Redis."""
-    return redis_client.sismember(DEACTIVATED_SET_KEY, event_type)
+def _write_redis_set_membership(
+    redis_client, event_type: str, add: bool
+) -> None:
+    """Add or remove an event type from the Redis deactivated set, log on failure."""
+    try:
+        if add:
+            redis_client.sadd(DEACTIVATED_SET_KEY, event_type)
+        else:
+            redis_client.srem(DEACTIVATED_SET_KEY, event_type)
+    except Exception as exc:
+        op = "add" if add else "remove"
+        logger.warning(
+            "playbook.redis.sync_failed",
+            extra={
+                "data": {
+                    "event_type": event_type,
+                    "operation": op,
+                    "error": str(exc),
+                }
+            },
+        )
 
 
 def deactivate_playbook(event_type: str) -> None:
     """Deactivate a playbook so its incoming jobs are sent to the DLQ."""
-    redis_client = get_redis_client()
     project_root = get_project_root()
     script_path = project_root / "musicsheets" / f"{event_type}.py"
 
     if not script_path.exists():
         print(
             f"[!] Warning: No musicsheet found for '{event_type}', "
-            "but writing to Redis anyway."
+            "but writing to config anyway."
         )
 
-    if redis_client.sismember(DEACTIVATED_SET_KEY, event_type):
+    if not deactivate_playbook_state(project_root, event_type):
         print(f"[*] Playbook '{event_type}' is already inactive.")
         return
 
-    redis_client.sadd(DEACTIVATED_SET_KEY, event_type)
+    redis_client = get_redis_client()
+    _write_redis_set_membership(redis_client, event_type, add=True)
     print(f"[-] Playbook '{event_type}' has been deactivated.")
 
 
 def activate_playbook(event_type: str) -> None:
     """Reactivate a previously deactivated playbook."""
-    redis_client = get_redis_client()
+    project_root = get_project_root()
 
-    if not redis_client.sismember(DEACTIVATED_SET_KEY, event_type):
+    if not activate_playbook_state(project_root, event_type):
         print(f"[*] Playbook '{event_type}' is already active.")
         return
 
-    redis_client.srem(DEACTIVATED_SET_KEY, event_type)
+    redis_client = get_redis_client()
+    _write_redis_set_membership(redis_client, event_type, add=False)
     print(f"[+] Playbook '{event_type}' has been activated.")
 
 
@@ -69,11 +92,7 @@ def print_playbooks() -> None:
         print("  (No playbooks found)")
         return
 
-    try:
-        redis_client = get_redis_client()
-        deactivated = redis_client.smembers(DEACTIVATED_SET_KEY)
-    except Exception:
-        deactivated = set()
+    deactivated = load_deactivated_playbooks(project_root)
 
     print(f"  {'PLAYBOOK':<30} STATUS")
     for playbook in playbooks:

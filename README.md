@@ -195,7 +195,36 @@ orchestra scheduler                    # Start the scheduler process
 ```
 
 ### Activation State
-Playbook activation/deactivation state is persisted in `.local_config/orchestra.json` under `playbooks.deactivated`. Redis is used as a runtime cache for fast lookups; the musician and scheduler resync the Redis cache from the config file on startup. To inspect or edit durable state, view `.local_config/orchestra.json` directly. This means `orchestra playbook activate <event_type>` and `orchestra playbook deactivate <event_type>` survive Redis restarts.
+Playbook activation/deactivation state is persisted in `.local_config/orchestra.json` under `playbooks.deactivated`. Redis is used as a runtime cache for fast lookups; the musician and scheduler resync the Redis cache from the config file on startup. To inspect or edit durable state, view `.local_config/orchestra.json` directamente. This means `orchestra playbook activate <event_type>` and `orchestra playbook deactivate <event_type>` survive Redis restarts.
+
+### Deduplication
+
+Two Redis-backed dedupe controls prevent duplicate job execution:
+
+**Webhook idempotency** (opt-in): Callers may send an `X-Orchestra-Idempotency-Key` header. Reusing the same key within the TTL window returns `duplicate: true` and does not enqueue a second job. Reuse the upstream event ID when possible (e.g. GitHub `X-GitHub-Delivery`, Stripe `Stripe-Event-Id`).
+
+```text
+POST /webhook
+X-Orchestra-Signature-256: sha256=...
+X-Orchestra-Idempotency-Key: alert-12345
+```
+
+Omitting the header queues every valid webhook (default behavior).
+
+**Scheduler dedupe** (always-on): The scheduler uses Redis `SET NX EX` to claim one fire per event type per cron minute across all scheduler processes. A restart, overlap, or accidental scale-up within the same minute will not enqueue duplicate jobs.
+
+Configure TTLs in `.local_config/orchestra.json`:
+
+```json
+{
+  "dedupe": {
+    "webhook_idempotency_ttl_seconds": 86400,
+    "scheduler_ttl_seconds": 120
+  }
+}
+```
+
+Defaults: webhook 24h, scheduler 2min. Omit the `dedupe` section to use defaults.
 
 <br>
 

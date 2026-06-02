@@ -63,6 +63,38 @@ def test_cli_playbook_help_smoke():
 
 
 @pytest.mark.integration
+def test_cli_jobs_help_smoke():
+    """Verify that orchestra jobs --help exits successfully."""
+    result = subprocess.run(
+        ["orchestra", "jobs", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    assert result.returncode == 0
+    assert "failed" in result.stdout
+
+
+@pytest.mark.integration
+def test_cli_jobs_failed_help_smoke():
+    """Verify that orchestra jobs failed --help exits successfully."""
+    result = subprocess.run(
+        ["orchestra", "jobs", "failed", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    assert result.returncode == 0
+    assert "list" in result.stdout
+    assert "show" in result.stdout
+    assert "replay" in result.stdout
+    assert "purge" in result.stdout
+    assert "export" in result.stdout
+
+
+@pytest.mark.integration
 @pytest.mark.skip(reason="Docker smoke test requires Docker daemon and is slow")
 def test_docker_help_smoke():
     """Verify that orchestra --help runs inside Docker image.

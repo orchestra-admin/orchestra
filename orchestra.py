@@ -6,6 +6,13 @@ import sys
 from cli.compose_cli import compose_action, compose_integration, compose_playbook
 from cli.index_cli import print_actions, print_integrations
 from cli.init_cli import init_project
+from cli.jobs_cli import (
+    export_failed_jobs,
+    list_failed_jobs,
+    purge_failed_jobs,
+    replay_failed_job,
+    show_failed_job,
+)
 from cli.musician_cli import run_musician
 from cli.playbook_cli import (
     activate_playbook,
@@ -96,6 +103,26 @@ def main() -> None:
         "--port", type=int, default=8080, help="Port to listen on"
     )
 
+    jobs_parser = subparsers.add_parser("jobs", help="Inspect and manage jobs")
+    jobs_sub = jobs_parser.add_subparsers(dest="jobs_action", required=True)
+
+    failed_parser = jobs_sub.add_parser("failed", help="Inspect failed jobs")
+    failed_sub = failed_parser.add_subparsers(dest="failed_action", required=True)
+
+    failed_list = failed_sub.add_parser("list", help="List failed jobs")
+    failed_show = failed_sub.add_parser("show", help="Show a failed job")
+    failed_show.add_argument("ref", help="Failed job index or job_id")
+    failed_replay = failed_sub.add_parser(
+        "replay", help="Replay a failed job if possible"
+    )
+    failed_replay.add_argument("ref", help="Failed job index or job_id")
+    failed_purge = failed_sub.add_parser("purge", help="Purge failed jobs")
+    failed_purge.add_argument("--yes", action="store_true")
+    failed_export = failed_sub.add_parser(
+        "export", help="Export failed jobs as JSON"
+    )
+    failed_export.add_argument("--output", default=None)
+
     subparsers.add_parser("musician", help="Start the local Redis musician")
 
     schedule_parser = subparsers.add_parser(
@@ -155,6 +182,18 @@ def main() -> None:
         except RuntimeError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
+    elif args.command == "jobs":
+        if args.jobs_action == "failed":
+            if args.failed_action == "list":
+                list_failed_jobs()
+            elif args.failed_action == "show":
+                show_failed_job(args.ref)
+            elif args.failed_action == "replay":
+                replay_failed_job(args.ref)
+            elif args.failed_action == "purge":
+                purge_failed_jobs(args.yes)
+            elif args.failed_action == "export":
+                export_failed_jobs(args.output)
     elif args.command == "musician":
         try:
             exit_code = run_musician()

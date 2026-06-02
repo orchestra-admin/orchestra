@@ -10,11 +10,14 @@ from conductor.conductor_tasks.musician import (
 from orchestra_core.config import (
     MAX_WEBHOOK_BODY_BYTES,
     get_project_root,
+    load_dedupe_config,
     load_musician_config,
 )
+from orchestra_core.dedupe import claim_webhook_idempotency_key
 from orchestra_core.logging import setup_logging
 from orchestra_core.redis import get_redis_client
 from orchestra_core.secrets import get_secret
+from orchestra_core.validators import validate_idempotency_key
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +57,11 @@ def get_signature_header(headers) -> str | None:
     )
 
 
+def get_idempotency_header(headers) -> str | None:
+    """Extract the optional webhook idempotency key from request headers."""
+    return headers.get("x-orchestra-idempotency-key")
+
+
 def build_signature(raw_body: bytes, secret: str) -> str:
     """Compute an HMAC SHA-256 signature for a raw request body."""
     digest = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
@@ -78,6 +86,8 @@ def create_webhook_app():
     project_root = get_project_root()
     musician_config = load_musician_config(project_root)
     queue_key = musician_config["queue_key"]
+    dedupe_config = load_dedupe_config(project_root)
+    webhook_idempotency_ttl = dedupe_config["webhook_idempotency_ttl_seconds"]
 
     redis_client = get_redis_client()
     redis_client.ping()
@@ -143,16 +153,51 @@ def create_webhook_app():
                 status_code=400, detail="Request body must be a JSON object"
             )
 
+        idempotency_key = get_idempotency_header(request.headers)
+        if idempotency_key is not None:
+            try:
+                idempotency_key = validate_idempotency_key(idempotency_key)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        metadata = {
+            "path": str(request.url.path),
+            "client": request.client.host if request.client else None,
+        }
+        if idempotency_key is not None:
+            metadata["idempotency_key"] = idempotency_key
+
         try:
-            job = build_queue_job(
-                payload,
-                metadata={
-                    "path": str(request.url.path),
-                    "client": request.client.host if request.client else None,
-                },
-            )
+            job = build_queue_job(payload, metadata=metadata)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        if idempotency_key is not None:
+            claimed, existing_job_id = claim_webhook_idempotency_key(
+                redis_client,
+                idempotency_key,
+                job["job_id"],
+                webhook_idempotency_ttl,
+            )
+            if not claimed:
+                logger.info(
+                    "webhook.request.duplicate",
+                    extra={
+                        "data": {
+                            "job_id": existing_job_id,
+                            "event_type": job["event_type"],
+                            "client_ip": request.client.host if request.client else None,
+                            "idempotency_key": idempotency_key,
+                            "duplicate": True,
+                        }
+                    },
+                )
+                return {
+                    "queued": False,
+                    "duplicate": True,
+                    "job_id": existing_job_id,
+                    "event_type": job["event_type"],
+                }
 
         enqueue_job(redis_client, queue_key, job)
         logger.info(
@@ -162,11 +207,13 @@ def create_webhook_app():
                     "job_id": job.get("job_id"),
                     "event_type": job["event_type"],
                     "client_ip": request.client.host if request.client else None,
+                    "duplicate": False,
                 }
             },
         )
         return {
             "queued": True,
+            "duplicate": False,
             "job_id": job.get("job_id"),
             "event_type": job["event_type"],
         }

@@ -1,11 +1,10 @@
-import re
 from pathlib import Path
 
 from orchestra_core.config import EVENT_TYPE_PATTERN
 
 
 def validate_event_type(event_type: str) -> None:
-    """Validate that an event type string is non-empty and contains only safe characters."""
+    """Validate that an event_type is a non-empty string of safe characters."""
     if not isinstance(event_type, str) or not event_type:
         raise ValueError("Payload must include a non-empty string field 'event_type'.")
     if not EVENT_TYPE_PATTERN.match(event_type):
@@ -19,7 +18,8 @@ def safe_child_path(base_dir: Path, relative_path: str) -> Path:
     """Safely resolve a child path and ensure it doesn't escape the base directory."""
     if ".." in relative_path or "/" in relative_path or "\\" in relative_path:
         raise ValueError(
-            f"Invalid filename '{relative_path}': path traversal characters are not allowed"
+            f"Invalid filename '{relative_path}': path traversal characters "
+            "are not allowed"
         )
     target = (base_dir / relative_path).resolve()
     try:

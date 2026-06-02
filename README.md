@@ -263,7 +263,7 @@ docker compose up -d
 | Service | Role |
 |---|---|
 | `redis` | Job queue (Redis 7 Alpine) |
-| `webhook` | FastAPI server receiving webhook POSTs |
+| `webhook` | FastAPI server receiving webhook POSTs; exposes `GET /health` liveness probe |
 | `musician` | Job worker pulling from Redis and executing scripts |
 | `scheduler` | Cron-based trigger process |
 | `nginx` | Reverse proxy with TLS termination |

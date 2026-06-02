@@ -153,3 +153,31 @@ def test_get_signature_header_case_insensitive():
     # Current implementation uses dict.get() which is case-sensitive
     # So this will return None (headers are lowercase in the implementation)
     assert result is None
+
+
+def test_health_endpoint(monkeypatch):
+    """GET /health returns 200 with {"status": "healthy"} without touching Redis."""
+    from fastapi.testclient import TestClient
+
+    class _StubRedis:
+        def ping(self):
+            return True
+
+    monkeypatch.setattr(
+        "conductor.conductor_tasks.webhook.get_redis_client",
+        lambda: _StubRedis(),
+    )
+    monkeypatch.setattr(
+        "conductor.conductor_tasks.webhook.get_webhook_secret",
+        lambda: "stubbed_secret",
+    )
+
+    from conductor.conductor_tasks.webhook import create_webhook_app
+
+    app = create_webhook_app()
+    client = TestClient(app)
+
+    resp = client.get("/health")
+
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "healthy"}

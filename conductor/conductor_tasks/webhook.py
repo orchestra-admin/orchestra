@@ -86,6 +86,10 @@ def create_webhook_app():
     Request = modules["Request"]
     app = FastAPI()
 
+    @app.get("/health")
+    async def health():
+        return {"status": "healthy"}
+
     @app.post("/webhook")
     async def receive_webhook(request: Request):
         content_length = request.headers.get("content-length")

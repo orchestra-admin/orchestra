@@ -11,9 +11,11 @@ from conductor.conductor_tasks.musician import (
 from orchestra_core.config import (
     DEACTIVATED_SET_KEY,
     get_project_root,
+    load_dedupe_config,
     load_musician_config,
     load_project_config,
 )
+from orchestra_core.dedupe import claim_scheduler_fire
 from orchestra_core.logging import setup_logging
 from orchestra_core.playbook_state import sync_deactivated_playbooks
 from orchestra_core.redis import get_redis_client
@@ -26,6 +28,16 @@ def load_schedules() -> dict:
     return load_project_config().get("schedules", {})
 
 
+def should_fire_scheduled_job(
+    redis_client,
+    event_type: str,
+    current_minute: str,
+    ttl_seconds: int,
+) -> bool:
+    """Return True if this scheduler instance claimed the event/minute fire slot."""
+    return claim_scheduler_fire(redis_client, event_type, current_minute, ttl_seconds)
+
+
 def run_scheduler() -> None:
     """Run the scheduler loop that enqueues scheduled jobs on their cron intervals."""
     setup_logging()
@@ -33,6 +45,8 @@ def run_scheduler() -> None:
     project_root = get_project_root()
     musician_config = load_musician_config(project_root)
     queue_key = musician_config["queue_key"]
+    dedupe_config = load_dedupe_config(project_root)
+    scheduler_dedupe_ttl = dedupe_config["scheduler_ttl_seconds"]
 
     redis_client = get_redis_client()
     redis_client.ping()
@@ -47,8 +61,6 @@ def run_scheduler() -> None:
         "scheduler.started",
         extra={"data": {"project_root": str(project_root), "queue": queue_key}},
     )
-
-    last_fired: dict[str, str] = {}
 
     while True:
         now = datetime.now()
@@ -66,14 +78,6 @@ def run_scheduler() -> None:
             if not croniter.match(cron_expr, now):
                 continue
 
-            if last_fired.get(event_type) == current_minute:
-                logger.info(
-                    "scheduler.cron.skipped_duplicate",
-                    extra={"data": {"event_type": event_type}},
-                )
-                continue
-            last_fired[event_type] = current_minute
-
             if redis_client.sismember(DEACTIVATED_SET_KEY, event_type):
                 logger.info(
                     "scheduler.cron.skipped_deactivated",
@@ -90,6 +94,18 @@ def run_scheduler() -> None:
                     extra={"data": {"event_type": event_type}},
                 )
                 continue
+
+            if not should_fire_scheduled_job(
+                redis_client, event_type, current_minute, scheduler_dedupe_ttl
+            ):
+                logger.info(
+                    "scheduler.cron.skipped_duplicate",
+                    extra={
+                        "data": {"event_type": event_type, "minute": current_minute}
+                    },
+                )
+                continue
+
             enqueue_job(redis_client, queue_key, job)
             logger.info(
                 "scheduler.cron.fired",

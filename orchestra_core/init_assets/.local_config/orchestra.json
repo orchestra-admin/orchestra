@@ -10,6 +10,9 @@
     "timeout_seconds": 300,
     "block_seconds": 5
   },
+  "playbooks": {
+    "deactivated": []
+  },
   "secrets": {
     "backend": "aws_ssm",
     "backend_configs": {

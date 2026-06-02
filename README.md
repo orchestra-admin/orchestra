@@ -107,7 +107,7 @@ docker compose up -d
 | `orchestra playbook list` | List all playbooks in the project |
 | `orchestra playbook review <playbook>` | AI-powered review with structured feedback |
 | `orchestra playbook activate <event_type>` | Activate a playbook for webhook/scheduled triggers |
-| `orchestra playbook deactivate <event_type>` | Deactivate a playbook |
+| `orchestra playbook deactivate <event_type>` | Deactivate a playbook (state persisted in `.local_config/orchestra.json`) |
 | `orchestra playbook run <event_type> [--payload]` | Run a playbook manually from the CLI |
 | `orchestra actions` | List available action library functions |
 | `orchestra integrations` | List available integrations |
@@ -193,6 +193,9 @@ Cron-based recurring execution:
 orchestra schedule add daily_report "0 9 * * *"
 orchestra scheduler                    # Start the scheduler process
 ```
+
+### Activation State
+Playbook activation/deactivation state is persisted in `.local_config/orchestra.json` under `playbooks.deactivated`. Redis is used as a runtime cache for fast lookups; the musician and scheduler resync the Redis cache from the config file on startup. To inspect or edit durable state, view `.local_config/orchestra.json` directly. This means `orchestra playbook activate <event_type>` and `orchestra playbook deactivate <event_type>` survive Redis restarts.
 
 <br>
 

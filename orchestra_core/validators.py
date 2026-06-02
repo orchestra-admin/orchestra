@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from orchestra_core.config import EVENT_TYPE_PATTERN
+from orchestra_core.config import EVENT_TYPE_PATTERN, IDEMPOTENCY_KEY_PATTERN
 
 
 def validate_event_type(event_type: str) -> None:
@@ -10,7 +10,22 @@ def validate_event_type(event_type: str) -> None:
     if not EVENT_TYPE_PATTERN.match(event_type):
         raise ValueError(
             f"Payload event_type '{event_type}' contains invalid characters. "
-            f"Only alphanumeric characters, underscores, hyphens, and dots are allowed."
+            "Only alphanumeric characters, underscores, hyphens, and dots are allowed."
+        )
+
+
+def validate_idempotency_key(key: str) -> None:
+    """Validate a caller-provided webhook idempotency key.
+
+    Allowed characters: alphanumeric, underscore, hyphen, dot, colon.
+    Length: 1-200 characters.
+    """
+    if not isinstance(key, str) or not key:
+        raise ValueError("Idempotency key must be a non-empty string.")
+    if not IDEMPOTENCY_KEY_PATTERN.match(key):
+        raise ValueError(
+            "Idempotency key may contain only alphanumeric characters, "
+            "underscores, hyphens, dots, and colons, up to 200 characters."
         )
 
 

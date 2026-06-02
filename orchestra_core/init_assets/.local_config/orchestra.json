@@ -31,5 +31,9 @@
   "llm": {
     "provider": "openai",
     "model": "gpt-5.5"
+  },
+  "dedupe": {
+    "webhook_idempotency_ttl_seconds": 86400,
+    "scheduler_ttl_seconds": 120
   }
 }

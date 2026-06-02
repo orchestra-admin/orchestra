@@ -13,6 +13,9 @@ DEFAULT_TIMEOUT_SECONDS = 300
 DEFAULT_BLOCK_SECONDS = 5
 MAX_WEBHOOK_BODY_BYTES = 1_048_576  # 1 MB
 EVENT_TYPE_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
+DEFAULT_WEBHOOK_IDEMPOTENCY_TTL_SECONDS = 86400
+DEFAULT_SCHEDULER_DEDUPE_TTL_SECONDS = 120
+IDEMPOTENCY_KEY_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]{1,200}$")
 DEFAULT_REDIS_CONFIG = {
     "host": "127.0.0.1",
     "port": 6379,
@@ -103,3 +106,30 @@ def load_musician_config(project_root: Path | None = None) -> dict:
             config[key] = raw_value
 
     return config
+
+
+def load_dedupe_config(project_root: Path | None = None) -> dict:
+    """Load dedupe settings from project config with defaults.
+
+    Returns a flat dict with keys: webhook_idempotency_ttl_seconds,
+    scheduler_ttl_seconds. Missing or invalid config falls back to
+    the defaults defined at module level.
+    """
+    data = load_project_config(project_root)
+    dedupe_cfg = data.get("dedupe", {})
+    if not isinstance(dedupe_cfg, dict):
+        dedupe_cfg = {}
+    return {
+        "webhook_idempotency_ttl_seconds": int(
+            dedupe_cfg.get(
+                "webhook_idempotency_ttl_seconds",
+                DEFAULT_WEBHOOK_IDEMPOTENCY_TTL_SECONDS,
+            )
+        ),
+        "scheduler_ttl_seconds": int(
+            dedupe_cfg.get(
+                "scheduler_ttl_seconds",
+                DEFAULT_SCHEDULER_DEDUPE_TTL_SECONDS,
+            )
+        ),
+    }

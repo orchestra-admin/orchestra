@@ -186,7 +186,9 @@ def create_webhook_app():
                         "data": {
                             "job_id": existing_job_id,
                             "event_type": job["event_type"],
-                            "client_ip": request.client.host if request.client else None,
+                            "client_ip": (
+                                request.client.host if request.client else None
+                            ),
                             "idempotency_key": idempotency_key,
                             "duplicate": True,
                         }

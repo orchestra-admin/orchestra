@@ -85,7 +85,7 @@ def purge_failed_jobs(redis_client, dlq_key: str) -> int:
 
 
 def is_replayable_failed_job(record: dict) -> bool:
-    """Return whether a failed job record contains enough original job data to replay."""
+    """Return whether a failed job has enough data to replay."""
     if not isinstance(record, dict):
         return False
     replay_job = record.get("replay_job")
@@ -112,7 +112,7 @@ def replay_failed_job(
         return (
             False,
             None,
-            "Failed job is not replayable because its original payload was not retained.",
+            "Failed job is not replayable: original payload not retained.",
         )
 
     replay_job = record["replay_job"]

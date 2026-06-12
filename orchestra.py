@@ -109,7 +109,7 @@ def main() -> None:
     failed_parser = jobs_sub.add_parser("failed", help="Inspect failed jobs")
     failed_sub = failed_parser.add_subparsers(dest="failed_action", required=True)
 
-    failed_list = failed_sub.add_parser("list", help="List failed jobs")
+    failed_sub.add_parser("list", help="List failed jobs")
     failed_show = failed_sub.add_parser("show", help="Show a failed job")
     failed_show.add_argument("ref", help="Failed job index or job_id")
     failed_replay = failed_sub.add_parser(

@@ -213,7 +213,7 @@ def test_is_replayable_true_for_valid_replay_job():
 
 
 def test_is_replayable_false_for_malformed_replay_job():
-    """is_replayable_failed_job returns False when replay_job fails parse_job validation."""
+    """Returns False when replay_job fails parse_job validation."""
     record = _make_record("abc123")
     record["replay_job"] = {"event_type": ""}  # missing event_type
     assert is_replayable_failed_job(record) is False

@@ -1,7 +1,6 @@
 """Tests for the failed jobs CLI wrapper."""
 
 import json
-from pathlib import Path
 
 import pytest
 

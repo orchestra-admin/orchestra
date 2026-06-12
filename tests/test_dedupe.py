@@ -216,7 +216,7 @@ def test_load_dedupe_config_returns_defaults_when_config_missing(
 def test_load_dedupe_config_returns_defaults_when_dedupe_section_missing(
     monkeypatch, tmp_path
 ):
-    """load_dedupe_config returns defaults when orchestra.json exists but has no dedupe section."""
+    """load_dedupe_config returns defaults when dedupe section is missing."""
     cfg_path = tmp_path / "orchestra.json"
     cfg_path.write_text('{"redis": {"host": "localhost"}}')
     monkeypatch.setattr(
@@ -234,7 +234,8 @@ def test_load_dedupe_config_reads_configured_ttls(monkeypatch, tmp_path):
     """load_dedupe_config reads TTLs from the dedupe section of orchestra.json."""
     cfg_path = tmp_path / "orchestra.json"
     cfg_path.write_text(
-        '{"dedupe": {"webhook_idempotency_ttl_seconds": 3600, "scheduler_ttl_seconds": 300}}'
+        '{"dedupe":'
+        ' {"webhook_idempotency_ttl_seconds": 3600, "scheduler_ttl_seconds": 300}}'
     )
     monkeypatch.setattr(
         "orchestra_core.config.get_project_config_path",

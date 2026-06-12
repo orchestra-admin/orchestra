@@ -14,7 +14,7 @@
     "deactivated": []
   },
   "secrets": {
-    "backend": "aws_ssm",
+    "backend": "env",
     "backend_configs": {
       "env": {
         "path": ".env"

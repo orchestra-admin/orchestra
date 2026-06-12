@@ -1,3 +1,5 @@
+<!-- DRAFT — not yet reviewed. This is a side-by-side replacement candidate for README.md. -->
+
 <img src="./logo.png" height=200px>
 
 <br>
@@ -6,11 +8,11 @@
 
 <br>
 
-:saxophone: Orchestra is a light-weight AI-assisted SOAR automation engine. You write security playbooks in plain English --- no cumbersome flowcharts. Orchestra converts them into executable Python scripts using modular re-usuable components, we then run them with our lightweight automation engine.
+:saxophone: Orchestra is a light-weight AI-assisted SOAR automation engine. You write security playbooks in plain English — no cumbersome flowcharts. Orchestra converts them into executable Python scripts using modular re-usable components; we then runs them on a lightweight automation engine.
 
 <br>
 
-**Built by Engineer, for Engineers.**
+**Built by Engineers, for Engineers.**
 
 <br>
 
@@ -27,15 +29,27 @@ You write a playbook          Orchestra composes it          Orchestra runs it
 
 <br>
 
+For a detailed architecture review, see [`docs/developer_guide.md`](docs/developer_guide.md).
+
+<br>
+
 ## Quick Start
 
 ### Install
 
+Clone the framework and install it in editable mode:
+
 ```bash
-pip install orchestra
+git clone https://github.com/orchestra-admin/orchestra.git
+cd orchestra
+pip install -e .
 ```
 
+The editable install gives you a working `orchestra` command on your `$PATH` and lets you read or modify the framework source alongside your automation project.
+
 ### Initialize a project
+
+Pick a separate directory for your automation project (not the framework repo you just cloned), then scaffold it:
 
 ```bash
 mkdir orchestra_workspace
@@ -59,13 +73,19 @@ orchestra_workspace/
 └── musicsheets/
     ├── ip_enrichment.py              # Example automation script
     └── local_actions/
-    ├── __init__.py
-    └── action_index.json
+        ├── __init__.py
+        ├── action_index.json
+        └── local_integrations/
+            └── __init__.py
 ```
 
-### Set your LLM API key
+### Configure secrets and an LLM provider
 
-Add your API key to `.env` (copy from `.env.example`):
+`orchestra init` already generated a `.env` from `.env.example` (with a random `WEBHOOK_SECRET` pre-filled). Open `.env` and set at least one LLM key plus any secrets the example playbook needs (VirusTotal, Slack):
+
+```bash
+vim .env
+```
 
 ```bash
 # OpenAI
@@ -74,11 +94,14 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 # Gemini
 GEMINI_API_KEY=...
+
+VT_API_KEY=...
+SLACK_WEBHOOK_URL=...
 ```
 
 ### Write your first playbook
 
-See [Writing a Playbook](#writing-a-playbook) below, or start with the included example:
+The init scaffold includes `playbooks/ip_enrichment.md`. Compose it into a runnable script:
 
 ```bash
 orchestra compose playbook playbooks/ip_enrichment.md
@@ -86,116 +109,52 @@ orchestra compose playbook playbooks/ip_enrichment.md
 
 ### Run it
 
-```bash
-# Manual run. (For testing, add the require API keys in .env file)
-orchestra playbook run ip_enrichment --payload '{"ip": "8.8.8.8"}'
+Manual run (uses the local Python interpreter, no Docker required):
 
-# Deploy the full automation engine.
+```bash
+orchestra playbook run ip_enrichment --payload '{"ip": "8.8.8.8"}'
+```
+
+Or deploy the full automation engine (Redis + webhook receiver + musician + scheduler + nginx) for webhook and scheduled triggers:
+
+```bash
 docker compose up -d
 ```
 
-<br>
-
-## CLI Reference
-
-| Command | Description |
-|---|---|
-| `orchestra init` | Scaffold a new Orchestra automation project |
-| `orchestra compose playbook <playbook>` | Convert a playbook markdown file into a Python script |
-| `orchestra compose action <description> [--name]` | Generate a reusable action function |
-| `orchestra compose integration <description> [--name]` | Generate an integration module |
-| `orchestra playbook list` | List all playbooks in the project |
-| `orchestra playbook review <playbook>` | AI-powered review with structured feedback |
-| `orchestra playbook activate <event_type>` | Activate a playbook for webhook/scheduled triggers |
-| `orchestra playbook deactivate <event_type>` | Deactivate a playbook (state persisted in `.local_config/orchestra.json`) |
-| `orchestra playbook run <event_type> [--payload]` | Run a playbook manually from the CLI |
-| `orchestra actions` | List available action library functions |
-| `orchestra integrations` | List available integrations |
-| `orchestra schedule list` | View scheduled playbooks |
-| `orchestra schedule add <event_type> <cron>` | Schedule a playbook with a cron expression |
-| `orchestra schedule remove <event_type>` | Remove a schedule |
-| `orchestra server [--port]` | Start the webhook HTTP server |
-| `orchestra musician` | Start the Redis job worker. Musician run python scripts (musicsheets)|
-| `orchestra scheduler` | Start the cron-based scheduler |
-
-<br>
-
-## Writing a Playbook
-
-Playbooks are markdown files with a structured format. See `playbooks/template.md` for the canonical template.
-
-```markdown
-# Playbook: IP Enrichment with Slack Notification
-
-## Description
-Receives an IP via webhook, enriches it via VirusTotal, posts result to Slack.
-
-## Inputs
-- JSON payload: `{"event_type": "ip_enrichment", "ip": "1.1.1.1"}`
-
-## Invocation
-Triggered by a webhook POST to `/webhook`.
-
-## Steps
-1. Read the IP address from the webhook payload using `actions.webhook.get_payload`.
-2. Query VirusTotal using `actions.virustotal.lookup_ip`.
-3. Format the result into a human-readable message.
-4. Send the message to Slack using `actions.slack.send_message`.
-
-## Output
-- A Slack message with IP verdict, detection stats, country, and ISP.
-
-## Environment Variables
-- `VT_API_KEY`: VirusTotal API key
-- `SLACK_WEBHOOK_URL`: Slack incoming webhook URL
-```
-
-Then compose it:
-
-```bash
-orchestra compose playbook playbooks/ip_enrichment.md
-```
-
-<br>
-
-## Built-in Actions
-
-The action library provides reusable functions that the Composer agent uses when generating scripts.
-
-### Custom Actions
-
-Add your own action functions in `musicsheets/local_actions/`, then rebuild the index:
-
-```bash
-orchestra actions
-```
-
-Your functions will be automatically discoverable by the Composer agent.
+To run it on a real server (EC2, ECS Fargate, etc.) instead of your laptop, see [`docs/deployment.md`](docs/deployment.md).
 
 <br>
 
 ## Trigger Modes
 
 ### Webhook (default)
-External services POST to `/webhook`. the payload is validated (HMAC-SHA256), enqueued into Redis, and picked up by the musician. The `event_type` field maps to `musicsheets/{event_type}.py`.
+
+External services `POST /webhook`. The payload is validated (HMAC-SHA256), enqueued into Redis, and picked up by the musician. The `event_type` field in the JSON body maps to `musicsheets/{event_type}.py`. The receiver also exposes `GET /health` for liveness probes.
 
 ### Manual
-Run any playbook directly from the CLI with optional JSON payload:
+
+Run any playbook directly from the CLI with an optional JSON payload:
 
 ```bash
 orchestra playbook run revoke_creds --payload '{"user": "alice"}'
 ```
 
+Manual runs respect activation state — a deactivated playbook will not execute.
+
 ### Scheduled
-Cron-based recurring execution:
+
+Cron-based recurring execution. Schedules live in `.local_config/orchestra.json` under the `schedules` section:
 
 ```bash
 orchestra schedule add daily_report "0 9 * * *"
 orchestra scheduler                    # Start the scheduler process
 ```
 
-### Activation State
-Playbook activation/deactivation state is persisted in `.local_config/orchestra.json` under `playbooks.deactivated`. Redis is used as a runtime cache for fast lookups; the musician and scheduler resync the Redis cache from the config file on startup. To inspect or edit durable state, view `.local_config/orchestra.json` directamente. This means `orchestra playbook activate <event_type>` and `orchestra playbook deactivate <event_type>` survive Redis restarts.
+Scheduled jobs go through the same Redis queue as webhook jobs, so all musician behavior (timeouts, DLQ, activation state) applies identically.
+
+### Activation state
+
+Playbook activation/deactivation state is persisted in `.local_config/orchestra.json` under `playbooks.deactivated`. Redis is a runtime cache used for fast lookups; the musician and scheduler resync the cache from the config file on startup. To inspect or edit durable state, view `.local_config/orchestra.json` directly. This means `orchestra playbook activate <event_type>` and `orchestra playbook deactivate <event_type>` survive Redis restarts.
 
 ### Deduplication
 
@@ -228,31 +187,58 @@ Defaults: webhook 24h, scheduler 2min. Omit the `dedupe` section to use defaults
 
 <br>
 
-## Failed Jobs
+## Writing a Playbook
 
-Inspect and manage jobs that failed during execution:
+Playbooks are markdown files with a fixed structure. See [playbooks/template.md](orchestra_core/init_assets/playbooks/template.md) for the canonical template.
 
-```bash
-# List failed jobs (compact table)
-orchestra jobs failed list
+See [playbooks/ip_enrichment.md](orchestra_core/init_assets/playbooks/ip_enrichment.md) and [musicsheets/ip_enrichment.py](orchestra_core/init_assets/musicsheets/ip_enrichment.py) for a simple example.
 
-# Show one failed job (by index or job_id)
-orchestra jobs failed show 0
-orchestra jobs failed show abc123
+```markdown
+# Playbook: IP Enrichment with Slack Notification
 
-# Replay a failed job if its original payload is available
-orchestra jobs failed replay 0
+## Description
+Receives an IP via webhook, enriches it via VirusTotal, posts result to Slack.
 
-# Purge all failed job records (requires explicit confirmation)
-orchestra jobs failed purge --yes
+## Inputs
+- JSON payload: `{"event_type": "ip_enrichment", "ip": "1.1.1.1"}`
 
-# Export failed jobs as JSON
-orchestra jobs failed export --output failed_jobs.json
+## Invocation
+Triggered by a webhook POST to `/webhook`.
+
+## Steps
+1. Read the IP address from the webhook payload using `actions.webhook.get_payload`.
+2. Query VirusTotal using `actions.virustotal.lookup_ip`.
+3. Format the result into a human-readable message string.
+4. Send the message to Slack using `actions.slack.send_message`.
+
+## Output
+- A Slack message with IP verdict, detection stats, country, and ISP.
+
+## Environment Variables
+- `VT_API_KEY`: VirusTotal API key
+- `SLACK_WEBHOOK_URL`: Slack incoming webhook URL
 ```
 
-**Replay limitation:** Failed job records are sanitized by default — the original webhook payload is not retained. Most failed jobs will refuse to replay with a clear error message. A future feature that stores a `replay_job` field in DLQ records would enable replay for sanitized records; this is currently out of scope.
+Then compose it:
 
-This is a deliberate security choice: failed-job storage is operator-visible and audit-friendly, while still avoiding retention of sensitive payload data.
+```bash
+orchestra compose playbook playbooks/ip_enrichment.md
+```
+
+### The action and integration system
+
+Generated `musicsheets/*.py` scripts are thin orchestrators that import from the **action library**. There are two kinds of modules:
+
+- **`actions/*.py`** — high-level helpers with real business logic. Each function does one thing (e.g. `actions.virustotal.lookup_ip`), handles its own HTTP call and error reporting, and returns a plain `dict` or `str`. These are what the Composer agent reaches for when generating scripts.
+- **`actions/integrations/*.py`** — thin credential wrappers. Each one exposes one or more `get_secret()` calls behind a descriptive name (e.g. `actions.integrations.slack_integration.get_webhook_url()`). Action functions call into integrations to retrieve credentials; musicsheets never read `os.environ` directly.
+
+Add your own action functions in `musicsheets/local_actions/`, then rebuild the index:
+
+```bash
+orchestra actions
+```
+
+Your functions are automatically discoverable by the Composer agent the next time it composes a playbook.
 
 <br>
 
@@ -273,6 +259,16 @@ Runtime config lives at `.local_config/orchestra.json`:
     "timeout_seconds": 300,
     "block_seconds": 5
   },
+  "playbooks": {
+    "deactivated": []
+  },
+  "schedules": {
+    "daily_report": "0 9 * * *"
+  },
+  "dedupe": {
+    "webhook_idempotency_ttl_seconds": 86400,
+    "scheduler_ttl_seconds": 120
+  },
   "secrets": {
     "backend": "env",
     "backend_configs": {
@@ -288,157 +284,139 @@ Runtime config lives at `.local_config/orchestra.json`:
 }
 ```
 
-### Secrets Management Backends Options
+### Environment variable overrides
 
-| Backend | Description |
+Most settings can be overridden at process start with `ORCHESTRA_*` environment variables, used by the Docker Compose stack to point services at the Redis container without editing the JSON:
+
+| Key | Env var |
 |---|---|
-| `env` (default) | Reads from environment variables (use Docker Compose `env_file` or shell exports to load `.env`) |
-| `docker_secrets` | Reads from Docker Swarm/Compose secret files |
-| `aws_ssm` | Reads from AWS Systems Manager Parameter Store |
+| `redis.host` | `ORCHESTRA_REDIS_HOST` |
+| `redis.port` | `ORCHESTRA_REDIS_PORT` |
+| `redis.db` | `ORCHESTRA_REDIS_DB` |
+| `musician.queue_key` | `ORCHESTRA_QUEUE_KEY` |
+| `musician.dlq_key` | `ORCHESTRA_DLQ_KEY` |
+| `musician.timeout_seconds` | `ORCHESTRA_TIMEOUT_SECONDS` |
+| `musician.block_seconds` | `ORCHESTRA_BLOCK_SECONDS` |
 
-### LLM Providers
+### LLM providers
 
 | Provider | Install | Config |
 |---|---|---|
 | OpenAI | Included by default | `OPENAI_API_KEY` |
 | Anthropic | `pip install orchestra[anthropic]` | `ANTHROPIC_API_KEY` |
 | Gemini | `pip install orchestra[gemini]` | `GEMINI_API_KEY` |
-| OpenAI-compatible (Ollama, Groq, Together, etc.) | Included by default | Set `base_url` in config |
+| OpenAI-compatible (Ollama, Groq, Together, etc.) | Included by default | Set `base_url` in `llm` config |
 
-<br>
+### Secret Management
 
-## Docker Deployment
+Generated scripts do not read environment variables directly. Instead, every credential lookup goes through `actions.secrets_helper.get_secret(key)`, which dispatches to the backend configured under `secrets.backend` in `.local_config/orchestra.json`.
 
-The project includes a ready-to-run Docker Compose stack:
+#### Backends
 
-```bash
-cp .env.example .env
-# Edit .env with your secrets
-docker compose up -d
-```
-
-| Service | Role |
+| Backend | Description |
 |---|---|
-| `redis` | Job queue (Redis 7 Alpine) |
-| `webhook` | FastAPI server receiving webhook POSTs; exposes `GET /health` liveness probe |
-| `musician` | Job worker pulling from Redis and executing scripts |
-| `scheduler` | Cron-based trigger process |
-| `nginx` | Reverse proxy with TLS termination |
+| `env` (default) | Reads from environment variables, with a fallback to a `.env` file at the configured path. |
+| `docker_secrets` | Reads from files mounted at `/run/secrets/<KEY>` (or a configured path). |
+| `aws_ssm` | Reads from AWS Systems Manager Parameter Store, with an optional region and key prefix. |
 
-The `musicsheets/` directory is mounted as a volume — add or update scripts without rebuilding images.
+```json
+{
+  "secrets": {
+    "backend": "aws_ssm",
+    "backend_configs": {
+      "env": { "path": ".env" },
+      "docker_secrets": { "path": "/run/secrets" },
+      "aws_ssm": { "region": "ap-southeast-2", "prefix": "/orchestra/" }
+    }
+  }
+}
+```
+
+#### Pushing and rotating
+
+For backends that are not the local `.env` file, push values from `.env` to the configured backend in one step:
+
+```bash
+orchestra secrets push
+```
+
+After a successful push, the local `.env` values are replaced with `<set_in_<backend>>` placeholders so the source of truth is unambiguous. List what is set and what is missing:
+
+```bash
+orchestra secrets list
+```
 
 <br>
 
-## Architecture
+## Troubleshooting
 
-```
-                         ┌─────────────────────────────────────────────┐
-                         │            Docker Compose Stack             │
-                         │                                             │
-  Webhook Source         │  ┌─────────┐      ┌────────────────────┐    │
-  ───────────────────────┼─▶│  Nginx  │─────▶│  Webhook Receiver  │    │
-  POST /webhook          │  │  :443   │      │  (FastAPI) :8000   │    │
-                         │  └─────────┘      └──────────┬─────────┘    │
-                         │                              │              │
-  ┌──────────────┐       │                          Enqueue            │
-  │  Manual CLI  │       │                              │              │
-  │ playbook run │───────┼─── Enqueue ───────▶┌─────────▼──────────┐   │
-  └──────────────┘       │                    │       Redis        │   │
-                         │                    │      (Queue)       │   │
-                         │                    └─────────┬──────────┘   │
-                         │                              │              │
-                         │                              │              │
-  ┌──────────────┐       │                    ┌─────────▼──────────┐   │
-  │  Scheduler   │       │                    │      Musician      │   │
-  │  (cron)      │───────┼─── Run Job ───────▶│   (Python worker)  │   │
-  └──────────────┘       │                    └─────────┬──────────┘   │
-                         │                              │              │
-                         └──────────────────────────────┼──────────────┘
-                                                        │ subprocess
-                                           ┌────────────▼────────────┐
-                                           │ musicsheets/ (host vol.)│
-                                           │   ip_enrichment.py      │
-                                           └─────────────────────────┘
+### Logging
+
+The framework writes structured JSON events to `logs/orchestra.log` (10 MB rotation, 5 backups, 60 MB total cap). One event per line:
+
+```json
+{"timestamp":"2026-06-12T14:30:22.123Z","level":"INFO","event":"musician.job.completed","data":{"job_id":"...","event_type":"ip_enrichment","returncode":0}}
 ```
 
-Each script runs as an isolated subprocess with stdin piping, subprocess timeout enforcement, and DLQ capture on non-zero exit codes.
+#### Event naming
+
+Events use dot notation, grouped by area. The most common namespaces:
+
+| Namespace | Examples |
+|---|---|
+| `compose.*` | `compose.playbook.started`, `compose.playbook.succeeded`, `compose.llm.retry` |
+| `webhook.*` | `webhook.request.accepted`, `webhook.request.rejected` |
+| `musician.*` | `musician.job.pulled`, `musician.job.completed`, `musician.job.dlq`, `musician.job.skipped_deactivated` |
+| `scheduler.*` | `scheduler.cron.fired`, `scheduler.cron.skipped_duplicate` |
+| `admin.*` | `admin.init`, `admin.secrets.push`, `admin.playbook.activate` |
+| `error.*` | `error.llm_api_key`, `error.redis_connection`, `error.playbook_not_found` |
+
+#### Levels
+
+| Level | When |
+|---|---|
+| `INFO` | Normal operations: job completed, playbook composed, cron fired, secrets pushed |
+| `WARNING` | Recoverable issues: job timed out, LLM retry triggered, deactivated playbook skipped |
+| `ERROR` | Failures: job non-zero exit, LLM API error, Redis connection lost, config error |
+
+The CLI's own stdout is unaffected — it is reserved for operator-facing output.
+
+### Failed Jobs
+
+The musician captures four failure modes into the dead letter queue (`orchestra:dlq`):
+
+- The script returned a non-zero exit code.
+- The script exceeded the configured timeout.
+- No `musicsheets/<event_type>.py` was found for the event.
+- The playbook was deactivated at runtime.
+
+Inspect and manage failed jobs with the `orchestra jobs failed` subcommands:
+
+```bash
+# List failed jobs (compact table)
+orchestra jobs failed list
+
+# Show one failed job (by index or job_id)
+orchestra jobs failed show 0
+orchestra jobs failed show abc123
+
+# Replay a failed job if its original payload is available
+orchestra jobs failed replay 0
+
+# Purge all failed job records (requires explicit confirmation)
+orchestra jobs failed purge --yes
+
+# Export failed jobs as JSON
+orchestra jobs failed export --output failed_jobs.json
+```
+
+**Replay limitation:** Failed job records are sanitized by default — the original webhook payload is not retained. Most failed jobs will refuse to replay with a clear error message. This is a deliberate security choice: failed-job storage is operator-visible and audit-friendly, while still avoiding retention of sensitive payload data.
 
 <br>
 
-## Testing
+## CLI Reference
 
-Install test dependencies:
-
-```bash
-python3 -m pip install -e ".[test]"
-```
-
-Run unit tests:
-
-```bash
-python3 -m compileall orchestra.py cli composer_agent conductor orchestra_core actions
-pytest
-```
-
-Run integration smoke tests:
-
-```bash
-pytest -m integration
-```
-
-Run all tests (unit + integration):
-
-```bash
-pytest
-pytest -m integration
-```
-
-Tests are deterministic, offline, and fast. No external network calls, Docker, Redis, AWS, OpenAI, Slack, or VirusTotal required for default CI.
-
-<br>
-
-## Linting
-
-Install linting tools:
-
-```bash
-python3 -m pip install -e ".[lint]"
-```
-
-Run linter:
-
-```bash
-ruff check .
-```
-
-Auto-fix safe issues:
-
-```bash
-ruff check --fix .
-```
-
-Format code:
-
-```bash
-black .
-```
-
-### Pre-commit Hooks
-
-Install pre-commit hooks to run linters automatically before each commit:
-
-```bash
-python3 -m pip install -e ".[lint]"
-pre-commit install
-```
-
-Now every `git commit` will run Ruff and Black automatically. If issues are found, the commit will be blocked until they're fixed.
-
-To skip hooks for a specific commit (not recommended):
-
-```bash
-git commit --no-verify -m "your message"
-```
+For the full list of subcommands, flags, and arguments, see [`docs/cli-guide.md`](docs/cli-guide.md).
 
 <br>
 
@@ -452,4 +430,4 @@ git commit --no-verify -m "your message"
 
 ## License
 
-MIT
+Apache License 2.0

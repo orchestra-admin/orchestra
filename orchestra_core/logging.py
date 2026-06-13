@@ -13,7 +13,7 @@ class JsonFormatter(logging.Formatter):
         payload = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
-            "event": getattr(record, "event", record.msg),
+            "event": getattr(record, "event", record.getMessage()),
             "data": getattr(record, "data", {}),
         }
         return json.dumps(payload, default=str)

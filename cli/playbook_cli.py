@@ -57,7 +57,11 @@ def deactivate_playbook(event_type: str) -> None:
         print(f"[*] Playbook '{event_type}' is already inactive.")
         return
 
-    redis_client = get_redis_client()
+    try:
+        redis_client = get_redis_client()
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(2)
     _write_redis_set_membership(redis_client, event_type, add=True)
     print(f"[-] Playbook '{event_type}' has been deactivated.")
 
@@ -70,7 +74,11 @@ def activate_playbook(event_type: str) -> None:
         print(f"[*] Playbook '{event_type}' is already active.")
         return
 
-    redis_client = get_redis_client()
+    try:
+        redis_client = get_redis_client()
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(2)
     _write_redis_set_membership(redis_client, event_type, add=False)
     print(f"[+] Playbook '{event_type}' has been activated.")
 

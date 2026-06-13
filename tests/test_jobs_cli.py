@@ -239,3 +239,41 @@ def test_export_failed_jobs_with_output_writes_file(fake_redis, capsys, tmp_path
     parsed = json.loads(output_path.read_text())
     assert len(parsed) == 2
     assert parsed[0]["job_id"] == "abc123"
+
+
+# Redis-down behavior
+
+
+def test_list_failed_jobs_exits_2_when_redis_down(monkeypatch, capsys):
+    """list_failed_jobs prints friendly error and exits 2 on Redis down."""
+    monkeypatch.setattr(
+        jobs_cli,
+        "get_redis_client",
+        lambda: (_ for _ in ()).throw(
+            RuntimeError("Redis is not reachable at 127.0.0.1:6379. "
+                         "Start it with `docker compose up -d redis`.")
+        ),
+    )
+    with pytest.raises(SystemExit) as excinfo:
+        list_failed_jobs()
+    assert excinfo.value.code == 2
+    captured = capsys.readouterr()
+    assert "Redis is not reachable at 127.0.0.1:6379" in captured.err
+    assert "docker compose up -d redis" in captured.err
+
+
+def test_show_failed_job_exits_2_when_redis_down(monkeypatch, capsys):
+    """show_failed_job prints friendly error and exits 2 on Redis down."""
+    monkeypatch.setattr(
+        jobs_cli,
+        "get_redis_client",
+        lambda: (_ for _ in ()).throw(
+            RuntimeError("Redis is not reachable at 127.0.0.1:6379. "
+                         "Start it with `docker compose up -d redis`.")
+        ),
+    )
+    with pytest.raises(SystemExit) as excinfo:
+        show_failed_job("abc123")
+    assert excinfo.value.code == 2
+    captured = capsys.readouterr()
+    assert "docker compose up -d redis" in captured.err

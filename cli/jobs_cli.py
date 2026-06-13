@@ -71,7 +71,11 @@ def list_failed_jobs() -> None:
     Malformed records are skipped with a one-line warning. The
     operator inspects Redis directly to recover them.
     """
-    redis_client, _queue_key, dlq_key = _load_failed_jobs_context()
+    try:
+        redis_client, _queue_key, dlq_key = _load_failed_jobs_context()
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(2)
     records = _list_failed_jobs(redis_client, dlq_key)
 
     well_formed = [r for r in records if not r.get("malformed")]
@@ -115,7 +119,11 @@ def list_failed_jobs() -> None:
 
 def show_failed_job(ref: str) -> None:
     """Print one failed job record as pretty JSON."""
-    redis_client, _queue_key, dlq_key = _load_failed_jobs_context()
+    try:
+        redis_client, _queue_key, dlq_key = _load_failed_jobs_context()
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(2)
     records = _list_failed_jobs(redis_client, dlq_key)
 
     found = find_failed_job(records, ref)
@@ -128,7 +136,11 @@ def show_failed_job(ref: str) -> None:
 
 def replay_failed_job(ref: str) -> None:
     """Replay a failed job if its original job payload is available."""
-    redis_client, queue_key, dlq_key = _load_failed_jobs_context()
+    try:
+        redis_client, queue_key, dlq_key = _load_failed_jobs_context()
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(2)
     records = _list_failed_jobs(redis_client, dlq_key)
 
     found = find_failed_job(records, ref)
@@ -153,14 +165,22 @@ def purge_failed_jobs(yes: bool = False) -> None:
         )
         sys.exit(1)
 
-    redis_client, _queue_key, dlq_key = _load_failed_jobs_context()
+    try:
+        redis_client, _queue_key, dlq_key = _load_failed_jobs_context()
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(2)
     count = _purge_failed_jobs(redis_client, dlq_key)
     print(f"[+] Purged {count} failed job record(s) from {dlq_key}")
 
 
 def export_failed_jobs(output: str | None = None) -> None:
     """Export failed job records as JSON to stdout or a file."""
-    redis_client, _queue_key, dlq_key = _load_failed_jobs_context()
+    try:
+        redis_client, _queue_key, dlq_key = _load_failed_jobs_context()
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(2)
     records = _list_failed_jobs(redis_client, dlq_key)
     json_text = _export_failed_jobs(records)
 

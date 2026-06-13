@@ -118,6 +118,10 @@ orchestra playbook run ip_enrichment --payload '{"ip": "8.8.8.8"}'
 Or deploy the full automation engine (Redis + webhook receiver + musician + scheduler + nginx) for webhook and scheduled triggers:
 
 ```bash
+# Build the image the docker-compose.yml references
+docker build -t orchestra/orchestra:latest .
+
+# Then bring up the stack
 docker compose up -d
 ```
 

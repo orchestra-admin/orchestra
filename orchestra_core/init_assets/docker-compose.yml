@@ -17,6 +17,7 @@ services:
 
   musician:
     image: orchestra/orchestra:latest
+    restart: unless-stopped
     env_file:
       - .env
     environment:

@@ -4,6 +4,8 @@ import subprocess
 import sys
 import time
 import uuid
+
+import redis
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -317,8 +319,26 @@ def run_musician() -> int:
         },
     )
 
+    reconnect_wait = 1
     while True:
-        item = redis_client.blpop(queue_key, timeout=block_seconds)
+        try:
+            item = redis_client.blpop(queue_key, timeout=block_seconds)
+        except (redis.exceptions.TimeoutError, redis.exceptions.ConnectionError) as exc:
+            logger.warning(
+                "musician.redis.error",
+                extra={"data": {"error": str(exc), "action": "reconnecting"}},
+            )
+            time.sleep(reconnect_wait)
+            try:
+                redis_client = get_redis_client()
+                reconnect_wait = 1
+            except RuntimeError as reconnect_exc:
+                logger.error(
+                    "musician.redis.reconnect_failed",
+                    extra={"data": {"error": str(reconnect_exc)}},
+                )
+                reconnect_wait = min(reconnect_wait * 2, 60)
+            continue
         if item is None:
             continue
 

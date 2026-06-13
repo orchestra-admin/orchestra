@@ -17,8 +17,9 @@ This is the simplest way to test run the stack on AWS.
 
 ### 1. Launch the EC2 Instance
 Create a virtual machine in the AWS Console:
-- **AMI**: Ubuntu Server 22.04 LTS.
-- **Instance Type**: `t3.small` (or `t3.micro` for lightweight test/sandbox runs).
+- **AMI**: Ubuntu Server 26.04 LTS.
+- **Instance Type**: `t3.small`.
+- **Create/Add SSH key pair**
 - **Storage**: 20 GB gp3.
 - **Security Group**:
   - Allow **SSH (Port 22)** from your IP.
@@ -35,7 +36,7 @@ sudo apt-get update
 sudo apt-get install -y python3-pip docker.io docker-compose-v2
 sudo usermod -aG docker ubuntu
 ```
-*Note: Log out and log back in to apply the docker group changes.*
+> **Note: Log out and log back in to apply the docker group changes.**
 
 ### 3. Clone, Install, and Build the Framework
 On the EC2 VM, clone the framework, install the `orchestra` CLI, and build the Docker image:
@@ -53,7 +54,6 @@ docker build -t orchestra/orchestra:latest .
 ### 4. Scaffold the Workspace
 Create a separate workspace directory and run `orchestra init` to scaffold it:
 ```bash
-cd ~
 mkdir -p ~/orchestra_workspace && cd ~/orchestra_workspace
 orchestra init
 ```

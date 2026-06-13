@@ -125,7 +125,7 @@ docker build -t orchestra/orchestra:latest .
 docker compose up -d
 ```
 
-To run it on a real server (EC2 etc.) instead of your laptop, see [`docs/deployment_guide.md`](docs/deployment_guide.md).
+To run it on a real test server (EC2 etc.) instead of your laptop, see [`docs/deployment_guide.md`](docs/deployment_guide.md).
 
 <br>
 

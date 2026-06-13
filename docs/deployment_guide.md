@@ -10,6 +10,7 @@ This is the simplest way to test run the stack on AWS.
 - An **AWS account**.
 - An **LLM API key** (OpenAI, Anthropic, or Gemini) and any other relevant creds for the playbooks.
 
+<br>
 
 ## Deployment Steps
 
@@ -75,7 +76,7 @@ SLACK_WEBHOOK_URL=...
 
 > `WEBHOOK_SECRET` is already set — `orchestra init` generates it automatically. Do not change it unless you want to rotate the secret.
 
----
+<br>
 
 ## Start and Verify the Stack
 
@@ -85,7 +86,7 @@ cd ~/orchestra_workspace
 docker compose up -d
 ```
 
-#### Verification Steps
+### Verification Steps
 
 1. **Verify Health Endpoint**:
    ```bash
@@ -112,7 +113,8 @@ docker compose up -d
    cat logs/orchestra.log
    ```
 
----
+<br>
+
 
 ### Troubleshooting
 
@@ -120,7 +122,7 @@ docker compose up -d
 - **Webhook returns 401 Unauthorized**: The signature generated in your test command does not match the `WEBHOOK_SECRET` configured in `.env`. Verify the secret and restart the stack: `docker compose restart`.
 - **Musician logs show connection errors**: The Redis container is not running or unreachable. Restart Redis: `docker compose up -d redis`.
 
----
+<br>
 
 ### Next Steps
 

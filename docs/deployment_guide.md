@@ -19,11 +19,11 @@ This is the simplest way to test run the stack on AWS.
 Create a virtual machine in the AWS Console:
 - **AMI**: Ubuntu Server 26.04 LTS.
 - **Instance Type**: `t3.small`.
-- **Create/Add SSH key pair**
+- **Create/Add SSH key pair**: Store the `.pem` file to a known location.
 - **Storage**: 20 GB gp3.
 - **Security Group**:
   - Allow **SSH (Port 22)** from your IP.
-  - Allow **HTTP (Port 80)** from anywhere (for incoming webhooks).
+  - Allow **HTTP (Port 80)** traffic from anywhere (for incoming webhooks).
 
 ### 2. Install Docker on the VM
 SSH into the instance using your private key (`-i` flag is required):
@@ -36,7 +36,8 @@ sudo apt-get update
 sudo apt-get install -y python3-pip docker.io docker-compose-v2
 sudo usermod -aG docker ubuntu
 ```
-> **Note: Log out and log back in to apply the docker group changes.**
+> [!IMPORTANT] 
+> Note: Log out and log back in to apply the docker group changes.
 
 ### 3. Clone, Install, and Build the Framework
 On the EC2 VM, clone the framework, install the `orchestra` CLI, and build the Docker image:

@@ -193,3 +193,43 @@ def test_deactivate_redis_failure_does_not_block(
     with open(config_path) as f:
         data = json.load(f)
     assert data["playbooks"]["deactivated"] == ["ip_enrichment"]
+
+
+def test_run_playbook_status_line_appears_before_subprocess_output(
+    tmp_path, monkeypatch, capsys
+):
+    """The 'Running playbook...' line is flushed before the subprocess runs.
+
+    Regression for the bug where the status line was buffered and
+    appeared after the subprocess's captured stderr instead of before,
+    because the print went to a block-buffered stdout that did not
+    flush until the next stdout write.
+    """
+    from conductor.conductor_tasks.musician import ExecutionResult
+
+    def _fake_execute_job(job, project_root=None, timeout_seconds=300):
+        return ExecutionResult(
+            status="failed",
+            event_type=job["event_type"],
+            returncode=1,
+            stdout="",
+            stderr="boom!",
+        )
+
+    monkeypatch.setattr(playbook_cli, "execute_job", _fake_execute_job)
+    monkeypatch.setattr(playbook_cli, "get_project_root", lambda: tmp_path)
+
+    playbook_cli.run_playbook("failer", payload={"ip": "1.1.1.1"})
+
+    captured = capsys.readouterr()
+    out = captured.out
+    err = captured.err
+
+    status_pos = out.find("Running playbook 'failer'")
+    failure_pos = out.find("failed with exit code")
+    assert status_pos != -1, "status line missing from stdout"
+    assert failure_pos != -1, "failure summary missing from stdout"
+    assert status_pos < failure_pos, (
+        "'Running playbook...' must appear before the failure summary"
+    )
+    assert "boom!" in err, "subprocess stderr must be re-emitted to stderr"

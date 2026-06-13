@@ -114,7 +114,7 @@ def run_playbook(event_type: str, payload: dict | None = None) -> None:
         print(f"Error: {e}", file=sys.stderr)
         return
 
-    print(f"[*] Running playbook '{event_type}' manually...")
+    print(f"[*] Running playbook '{event_type}' manually...", flush=True)
     result = execute_job(job)
 
     if result.stdout:

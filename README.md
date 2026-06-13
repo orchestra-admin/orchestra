@@ -197,26 +197,22 @@ See [playbooks/ip_enrichment.md](orchestra_core/init_assets/playbooks/ip_enrichm
 # Playbook: IP Enrichment with Slack Notification
 
 ## Description
-Receives an IP via webhook, enriches it via VirusTotal, posts result to Slack.
+This script receives an IP address via webhook payload, enriches it by querying VirusTotal, and sends the result to a Slack channel.
 
 ## Inputs
-- JSON payload: `{"event_type": "ip_enrichment", "ip": "1.1.1.1"}`
+- Webhook JSON payload on stdin: `{"event_type": "ip_enrichment", "ip": "1.1.1.1"}`
 
 ## Invocation
-Triggered by a webhook POST to `/webhook`.
+This playbook is triggered by a webhook `POST` to `/webhook`.
 
 ## Steps
 1. Read the IP address from the webhook payload using `actions.webhook.get_payload`.
 2. Query VirusTotal using `actions.virustotal.lookup_ip`.
-3. Format the result into a human-readable message string.
-4. Send the message to Slack using `actions.slack.send_message`.
+3. Format the enrichment result into a human-readable message string.
+4. Send the formatted message to Slack using `actions.slack.send_message`.
 
 ## Output
-- A Slack message with IP verdict, detection stats, country, and ISP.
-
-## Environment Variables
-- `VT_API_KEY`: VirusTotal API key
-- `SLACK_WEBHOOK_URL`: Slack incoming webhook URL
+- A Slack message containing the IP enrichment verdict, detection stats, country, ISP, and a link to the full VirusTotal report.
 ```
 
 Then compose it:
@@ -279,7 +275,7 @@ Runtime config lives at `.local_config/orchestra.json`:
   },
   "llm": {
     "provider": "openai",
-    "model": "gpt-4o"
+    "model": "gpt-5.5"
   }
 }
 ```

@@ -104,7 +104,13 @@ class SomeClass:
     # Check public_function signature and description
     public_func = next(f for f in functions if f["function"] == "public_function")
     assert public_func["signature"] == "(a: int, b: str = 'default') -> dict"
-    assert public_func["description"] == "This is a public function."
+    # The full docstring is kept (newlines collapsed to spaces) so the
+    # composer prompt sees the Args/Returns blocks, not just the summary.
+    assert public_func["description"] == (
+        "This is a public function.      "
+        "It has multiple paragraphs in the docstring.     "
+        "This second paragraph should not appear in the description."
+    )
 
     # Check another_public signature
     another_func = next(f for f in functions if f["function"] == "another_public")

@@ -1,6 +1,6 @@
 # Compose Action Agent
 
-You are an expert Python developer. Generate ONE reusable action function with a docstring.
+You are an expert Python developer. Generate ONE reusable action function with a docstring with details including description, args, what it return, and other relevant info.
 
 ## Output Format
 Start with a name comment, then the code:

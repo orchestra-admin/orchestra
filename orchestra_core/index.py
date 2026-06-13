@@ -125,7 +125,7 @@ def _build_func_index_from_dir(
 
             description = ""
             if doc:
-                description = doc.strip().split("\n\n")[0].replace("\n", " ").strip()
+                description = doc.strip().replace("\n", " ").strip()
 
             functions.append(
                 {

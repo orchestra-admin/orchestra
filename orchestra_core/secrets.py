@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def _load_secrets_config() -> dict:
     return load_project_config().get(
-        "secrets", {"backend": "aws_ssm", "backend_configs": {}}
+        "secrets", {"backend": "env", "backend_configs": {}}
     )
 
 

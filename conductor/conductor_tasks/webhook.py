@@ -156,7 +156,7 @@ def create_webhook_app():
         idempotency_key = get_idempotency_header(request.headers)
         if idempotency_key is not None:
             try:
-                idempotency_key = validate_idempotency_key(idempotency_key)
+                validate_idempotency_key(idempotency_key)
             except ValueError as exc:
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
 

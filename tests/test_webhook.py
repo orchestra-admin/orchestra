@@ -181,3 +181,70 @@ def test_health_endpoint(monkeypatch):
 
     assert resp.status_code == 200
     assert resp.json() == {"status": "healthy"}
+
+
+def test_webhook_dedupes_on_idempotency_key(monkeypatch):
+    """POSTing the same idempotency key twice returns duplicate=True on the second call.
+
+    Regression for the bug where validate_idempotency_key was assigned
+    back to idempotency_key (overwriting the header value with None),
+    short-circuiting the dedupe check at the request handler.
+    """
+    from fastapi.testclient import TestClient
+
+    class _FakeRedis:
+        def __init__(self):
+            self.store = {}
+
+        def ping(self):
+            return True
+
+        def set(self, key, value, nx=False, ex=None):
+            if nx and key in self.store:
+                return False
+            self.store[key] = value
+            return True
+
+        def get(self, key):
+            return self.store.get(key)
+
+        def rpush(self, key, *values):
+            self.store.setdefault(key, []).extend(values)
+            return len(values)
+
+    secret = "stubbed_secret"
+    payload = b'{"event_type":"ip_enrichment","ip":"1.1.1.1"}'
+    sig = build_signature(payload, secret)
+    headers = {
+        "Content-Type": "application/json",
+        "X-Orchestra-Signature-256": sig,
+        "X-Orchestra-Idempotency-Key": "test-1",
+    }
+
+    fake = _FakeRedis()
+    monkeypatch.setattr(
+        "conductor.conductor_tasks.webhook.get_redis_client",
+        lambda: fake,
+    )
+    monkeypatch.setattr(
+        "conductor.conductor_tasks.webhook.get_webhook_secret",
+        lambda: secret,
+    )
+
+    from conductor.conductor_tasks.webhook import create_webhook_app
+
+    app = create_webhook_app()
+    client = TestClient(app)
+
+    first = client.post("/webhook", content=payload, headers=headers)
+    second = client.post("/webhook", content=payload, headers=headers)
+
+    assert first.status_code == 200
+    assert first.json()["duplicate"] is False
+    assert first.json()["queued"] is True
+    first_job_id = first.json()["job_id"]
+
+    assert second.status_code == 200
+    assert second.json()["duplicate"] is True
+    assert second.json()["queued"] is False
+    assert second.json()["job_id"] == first_job_id

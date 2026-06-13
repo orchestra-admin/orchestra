@@ -35,7 +35,7 @@ docker push <account>.dkr.ecr.<region>.amazonaws.com/orchestra:latest
 
 In the AWS console:
 
-- **AMI:** Amazon Linux 2023.
+- **AMI:** Ubuntu Server 22.04 LTS.
 - **Instance type:** `t3.small` (or `t3.medium` if you expect >50 jobs/hour).
 - **Storage:** 20 GB gp3.
 - **Subnet:** a public subnet, with **Auto-assign public IP** enabled.
@@ -46,10 +46,10 @@ You can paste the following as **User data** to install Docker on first boot, or
 
 ```bash
 #!/bin/bash
-yum update -y
-yum install -y docker
+apt-get update
+apt-get install -y docker.io
 systemctl enable --now docker
-usermod -aG docker ec2-user
+usermod -aG docker ubuntu
 ```
 
 ---
@@ -57,13 +57,13 @@ usermod -aG docker ec2-user
 ## 3. SSH in and start the stack
 
 ```bash
-ssh ec2-user@<elastic-ip>
+ssh ubuntu@<elastic-ip>
 
 # If you skipped the user data script:
-sudo yum update -y
-sudo yum install -y docker
+sudo apt-get update
+sudo apt-get install -y docker.io
 sudo systemctl enable --now docker
-sudo usermod -aG docker ec2-user
+sudo usermod -aG docker ubuntu
 # log out and back in so the docker group takes effect
 
 # Authenticate to ECR and pull the image
@@ -76,7 +76,7 @@ mkdir -p /opt/orchestra
 cd /opt/orchestra
 # From your workstation, scp the scaffolded project into this directory:
 #   scp -r .env musicsheets playbooks nginx.conf docker-compose.yml .local_config \
-#     ec2-user@<elastic-ip>:/opt/orchestra/
+#     ubuntu@<elastic-ip>:/opt/orchestra/
 
 # Start everything
 docker compose up -d

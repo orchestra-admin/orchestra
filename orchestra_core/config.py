@@ -50,17 +50,19 @@ def load_project_config(project_root: Path | None = None) -> dict:
 
 
 def get_project_root() -> Path:
-    """Walk up from cwd to find the Orchestra project root.
+    """Find the Orchestra project root near the current working directory.
 
     The project root is identified by the presence of
-    ``.local_config/orchestra.json``.  If no marker is found,
-    falls back to the current working directory.
+    ``.local_config/orchestra.json``.  To avoid accidentally selecting a stale
+    marker high in an ancestor tree, only the current directory and its
+    immediate parent are considered.  If neither contains a marker, falls back
+    to the current working directory.
     """
     marker = Path(".local_config") / "orchestra.json"
     current = Path.cwd()
-    for parent in [current, *current.parents]:
-        if (parent / marker).exists():
-            return parent
+    for candidate in (current, current.parent):
+        if (candidate / marker).exists():
+            return candidate
     return current
 
 

@@ -137,5 +137,5 @@ No over-engineering. Implement the simplest thing that satisfies the requirement
 ## Dependencies
 
 - Core: `openai`, `boto3`, `fastapi`, `redis`, `uvicorn`, `croniter`
-- Optional: `anthropic`, `google-generativeai` (via `[anthropic]`, `[gemini]`)
+- Optional: `anthropic`, `google-genai` (via `[anthropic]`, `[gemini]`)
 - No new dependencies without discussion

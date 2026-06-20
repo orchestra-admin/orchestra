@@ -14,7 +14,7 @@ SUPPORTED_PROVIDERS = {
         "install_hint": "pip install orchestra[anthropic]",
     },
     "gemini": {
-        "package": "google.generativeai",
+        "package": "google.genai",
         "secret_key": "GEMINI_API_KEY",
         "install_hint": "pip install orchestra[gemini]",
     },
@@ -67,15 +67,15 @@ def _anthropic_query(
 def _gemini_query(
     system_prompt: str, user_prompt: str, model: str, api_key: str
 ) -> str:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
 
-    genai.configure(api_key=api_key)
-    try:
-        model_obj = genai.GenerativeModel(model, system_instruction=system_prompt)
-    except TypeError:
-        model_obj = genai.GenerativeModel(model)
-        user_prompt = system_prompt + "\n\n" + user_prompt
-    response = model_obj.generate_content(user_prompt)
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model=model,
+        contents=user_prompt,
+        config=types.GenerateContentConfig(system_instruction=system_prompt),
+    )
     return response.text
 
 
@@ -125,7 +125,7 @@ def llm_query(system_prompt: str, user_prompt: str) -> str:
             return _gemini_query(system_prompt, user_prompt, model, api_key)
         except ImportError:
             raise OrchestraError(
-                f"The 'google-generativeai' package is required for the "
+                f"The 'google-genai' package is required for the "
                 f"Gemini provider. "
                 f"Install it with: {provider_info['install_hint']}"
             ) from None

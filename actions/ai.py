@@ -1,5 +1,4 @@
 import json
-import re
 
 from orchestra_core.llm import llm_query
 
@@ -8,11 +7,9 @@ _DEFAULT_ASK_SYSTEM_PROMPT = (
     "Answer concisely and only use the provided context."
 )
 _DECIDE_SYSTEM_PROMPT = (
-    "You are helping an automation playbook make one bounded control-flow decision. "
-    "Return only JSON."
+    "You are helping an automation playbook make one bounded control-flow decision."
 )
 _MAX_ATTEMPTS = 3
-_JSON_BLOB_PATTERN = re.compile(r"\{.*\}", re.DOTALL)
 
 
 def _format_context(context: dict | None) -> str:
@@ -41,41 +38,6 @@ def _validate_decision_inputs(
         seen.add(option)
     if default is not None and default not in options:
         raise ValueError(f"default {default!r} must be one of options")
-
-
-def _parse_decision(raw: str) -> str:
-    """Extract the decision string from an LLM response containing JSON.
-
-    Strips markdown code fences and extracts the first JSON object found
-    in the text. Does not validate against the allowed options — that is
-    the caller's responsibility.
-    """
-    text = raw.strip()
-    if text.startswith("```"):
-        newline_idx = text.find("\n")
-        if newline_idx != -1:
-            text = text[newline_idx + 1 :]
-            if text.endswith("```"):
-                text = text[:-3]
-            text = text.strip()
-
-    match = _JSON_BLOB_PATTERN.search(text)
-    if not match:
-        raise ValueError(f"no JSON object found in response: {raw!r}")
-
-    try:
-        parsed = json.loads(match.group(0))
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"response is not valid JSON: {raw!r}") from exc
-
-    if not isinstance(parsed, dict) or "decision" not in parsed:
-        raise ValueError(f"response missing 'decision' key: {raw!r}")
-
-    decision = parsed["decision"]
-    if not isinstance(decision, str):
-        raise ValueError(f"'decision' value must be a string: {raw!r}")
-
-    return decision
 
 
 def ask(
@@ -113,6 +75,10 @@ def decide(
 ) -> str:
     """Ask the configured LLM to choose one option for playbook control flow.
 
+    Uses the provider's structured-output support so the response is
+    schema-validated to `{"decision": "<one of options>"}` at the API
+    level. The chosen option string is returned directly.
+
     Args:
         prompt: The decision question for the LLM.
         options: The only valid return values. Must be non-empty, unique,
@@ -138,28 +104,20 @@ def decide(
     user_prompt = (
         f"Decision prompt:\n{prompt}\n\n"
         f"Allowed options:\n{options_block}\n\n"
-        f"Context:\n{_format_context(context)}\n\n"
-        "Return exactly:\n"
-        '{"decision": "<one allowed option>"}'
+        f"Context:\n{_format_context(context)}"
     )
 
     last_error: str = ""
     for _ in range(_MAX_ATTEMPTS):
         try:
-            raw = llm_query(_DECIDE_SYSTEM_PROMPT, user_prompt)
+            result = llm_query(_DECIDE_SYSTEM_PROMPT, user_prompt, options=options)
         except Exception as exc:
             last_error = f"llm_query failed: {exc}"
             continue
 
-        try:
-            decision = _parse_decision(raw)
-        except ValueError as exc:
-            last_error = f"parse failed: {exc}"
-            continue
-
-        if decision in options:
-            return decision
-        last_error = f"decision {decision!r} not in options {options!r}"
+        if result in options:
+            return result
+        last_error = f"result {result!r} not in options {options!r}"
 
     if default is not None:
         return default

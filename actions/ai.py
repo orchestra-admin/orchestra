@@ -100,12 +100,7 @@ def decide(
     """
     _validate_decision_inputs(prompt, options, default)
 
-    options_block = "\n".join(f"- {option}" for option in options)
-    user_prompt = (
-        f"Decision prompt:\n{prompt}\n\n"
-        f"Allowed options:\n{options_block}\n\n"
-        f"Context:\n{_format_context(context)}"
-    )
+    user_prompt = f"Decision prompt:\n{prompt}\n\nContext:\n{_format_context(context)}"
 
     last_error: str = ""
     for _ in range(_MAX_ATTEMPTS):

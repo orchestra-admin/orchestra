@@ -154,3 +154,30 @@ def get_custom_api_key() -> str:
     # (slack_integration and virustotal_integration from actions/integrations/)
     assert "actions.integrations.slack_integration" in result
     assert "actions.integrations.virustotal_integration" in result
+
+
+def test_build_action_index_includes_ai_module(tmp_path: Path):
+    """Verify the built-in actions.ai module is indexed with ask and decide."""
+    result = build_action_index(tmp_path)
+
+    assert "actions.ai" in result
+    entry = result["actions.ai"]
+    assert entry["secrets"] == []
+
+    function_names = [f["function"] for f in entry["functions"]]
+    assert "ask" in function_names
+    assert "decide" in function_names
+
+    ask_func = next(f for f in entry["functions"] if f["function"] == "ask")
+    assert ask_func["signature"] == (
+        "(prompt: str, context: dict | None = None, "
+        "system_prompt: str | None = None) -> str"
+    )
+    assert "Ask the configured LLM" in ask_func["description"]
+
+    decide_func = next(f for f in entry["functions"] if f["function"] == "decide")
+    assert decide_func["signature"] == (
+        "(prompt: str, options: list[str], context: dict | None = None, "
+        "default: str | None = None) -> str"
+    )
+    assert "Ask the configured LLM to choose" in decide_func["description"]
